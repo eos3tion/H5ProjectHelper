@@ -1,0 +1,6 @@
+{
+    "project": "@name@",
+    "origin": "//192.168.9.187/common/cfgsbase.json",
+    "lan": "@ver@",
+    "endAction": "http://action.build.h5//data/projects/${project}/pakData.js"
+}

@@ -1,0 +1,1 @@
+tsc -t es5 --removeComments  client/Client.ts --outFile dist/build.js

@@ -1,0 +1,147 @@
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<style>
+		body {
+			margin: 0px;
+			font: 微软雅黑 12px;
+		}
+
+		#header {
+			padding: 5px;
+			min-height: 40px;
+			background: #f8f8f8;
+			border-bottom: 1px solid #ebebeb;
+			width: 100%;
+			z-index: 999;
+			position: fixed;
+			line-height: 30px;
+		}
+
+		.headScroll {
+			box-shadow: 0 0 5px #888;
+		}
+	</style>
+	<script type="text/javascript" src="http://build.h5/build.js"></script>
+	<script type="text/javascript">
+		var projectName = "@name@";
+		var yunweiProject = "@name@";
+		document.title = projectName + " 项目发布";
+		var remotePath = "/data/ftp/company_202/";
+		var settings = {
+			cn: {
+				name: "大陆",
+				yunweiKey: yunweiProject,
+				remoteKey: "online",
+				options: {
+					title: "血饮龙纹",
+					wsProxy: "xylw.961u.com",
+					opSSHIp: "120.92.155.245",
+					get_res_md5: "cd /data/www/res/ && find -type f -exec md5sum {} \\; && echo -n 'xuke success' || echo -n 'xuke fail'",
+					upload_app: "sh /data/script/update/qianduan_update",
+					upload_res: "sh /data/script/update/qianduan_update",
+					yunweiPath: "//192.168.0.202/xxh5_version/online/",
+					scpApp: remotePath + "web/",
+					scpRes: remotePath + "res/",
+					wsProxy: "xylw.961u.com"
+				},
+				htmls: ["zhangmeng.html", "1sdk.html"],
+				hasNightly: true
+			},
+			cnhy: {
+				name: "hysdk-bt版",
+				lan: "cn",
+				yunweiKey: "xxbt",
+				options: {
+					cfgVer: "hy",
+					buildVersion: "bt",
+					gameCfgPath: "resource/game_hy.json",
+					opSSHIp: "120.92.153.139",
+					get_res_md5: "cd /data/www/res/ && find -type f -exec md5sum {} \\; && echo -n 'xuke success' || echo -n 'xuke fail'",
+					upload_app: "sh /data/script/update/qianduan_update",
+					upload_res: "sh /data/script/update/qianduan_update",
+					yunweiPath: "//192.168.0.202/xxh5_version/hysdk/",
+					resVersionFile: "F:/temp/xx/cn/nor/resVersion.json",
+					scpApp: remotePath + "web/",
+					scpRes: remotePath + "res/",
+					wsProxy: "xxbt.961u.com"
+				},
+				htmls: ["zhangmeng.html", "1sdk.html"],
+				hasNightly: true
+			}
+		}
+
+		function initView() {
+			createAllBySettings();
+		}
+
+		function createServerBtns(key, cmds) {
+			addServerBtn(key, "更新服务端", "server", "sh /data/script/update/houduan_update", cmds);
+			addServerBtn(key, "上传gate", "gate");
+			addServerBtn(key, "上传pay", "pay");
+			addServerBtn(key, "上传gmtools", "gmtools");
+			addServerBtn(key, "上传login", "login");
+			addServerBtn(key, "上传report", "report");
+			addServerBtn(key, "上传logdb", "logdb");
+		}
+
+		function addServerBtn(lan, label, key, cmd, cmds) {
+			var setting = settings[lan];
+			var buildCMD = cmds ? "buildServer" : "publishServer";
+			if (setting) {
+				var options = setting.options;
+				if (options) {
+					var yunweiPath = options.yunweiPath;
+					var remoteHost = options.opSSHIp;
+					addBtnToArea(
+						lan,
+						label,
+						function () {
+							connectAndDo(projectName, buildCMD,
+								[{ host: remoteHost, remotePath: remotePath + key + "/", key: key, localPath: yunweiPath + key, cmd: cmd, buildCmds: cmds }]);
+						}
+					)
+				}
+			}
+		}
+
+
+		/***************************主脚本*****************************/
+		function buildWXGame() {
+			connectAndDo(projectName, 'buildApp', [{ project: projectName, useRaws: ["lib"], isRelease: true, buildType: "wxgame", beforeEmbedJs: ["//192.168.0.5/hqgh5/cn/nl_cn.js"] }]);
+		}
+
+		function updateRes() {
+			connectAndDo(projectName, 'updateRes', [{ project: projectName, showFileSolveLog: true }]);
+		}
+
+
+	</script>
+</head>
+
+<body>
+	<div id="header">
+		<div>
+			<label><input id="pubApp" type="checkbox" />发布程序</label><label><input id="pubRes"
+					type="checkbox" />发布资源</label><label>
+				<input id="mkver" type="checkbox" />使用日期作为版本名</label>
+			<div id="lan">
+			</div>
+			<div>▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇发布微信小游戏发布▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇</div>
+			<div><input type="button" value="发布微信小游戏版本" onclick="buildWXGame()" /> </div>
+			<div>▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇其他操作▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇</div>
+			<div><input type="button" value="更新res资源" onclick="updateRes()" /> </div><br />
+			<div id="static">
+				<input type="button" value="清除日志" onclick="clearLog()" />
+			</div>
+		</div>
+	</div>
+	<div id="log">
+		<pre id="output">
+        </pre>
+	</div>
+	<span id="loghid" style="overflow:hidden"></span>
+</body>
+
+</html>

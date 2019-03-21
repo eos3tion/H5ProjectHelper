@@ -1,0 +1,18 @@
+{
+  "name": "buildserver",
+  "version": "1.0.0",
+  "description": "用于做项目的构建服务",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eos3tion/H5ProjectHelper.git"
+  },
+  "author": "3tion",
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^6.2.0"
+  }
+}

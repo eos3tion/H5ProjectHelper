@@ -1,0 +1,15 @@
+const cp = require("child_process");
+const project = "@name@";
+const ver = "cn";
+const defaultLan = "cn";
+const baseDir = "/data/projects";
+const scriptsRoot = `${baseDir}/h5build/scripts`;
+const pakDataPath = `${scriptsRoot}/PakData.js`;
+const parseMapPath = `${scriptsRoot}/ParseMap`;
+const ParseMap = require(parseMapPath);
+const webPath = `${baseDir}/www/${project}`;
+const cfgDir = `${webPath}/cfgs/${ver}/raw/client/`;
+const mapPath = `${webPath}/res/${defaultLan}/m2`;
+const javaPath = `${webPath}/cfgs/${ver}/output/server/maplist.dat`;
+ParseMap.parseMap(cfgDir, mapPath, javaPath);
+cp.fork(pakDataPath, [JSON.stringify({ project })]);
