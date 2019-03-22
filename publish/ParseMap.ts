@@ -155,7 +155,7 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string) 
     }
 
     //存储文件
-    let temp = new Buffer(1024 * 1024 * 10);
+    let temp = Buffer.alloc(1024 * 1024 * 10);
     let elen = effects.length;
     let pos = 0;
     pos = writeVarint(elen, temp, pos);

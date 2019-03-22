@@ -51,7 +51,7 @@ function getChunk(name: string, type: number, buffer: Buffer) {
     let len = Buffer.byteLength(name);
     let bl = buffer.length;
     let bufferLen = 1 + len + 1 + getVarintLeng(bl) + bl;
-    let out = new Buffer(bufferLen);
+    let out = Buffer.alloc(bufferLen);
     let pos = 0;
     out.writeUInt8(len, pos);
     pos++;

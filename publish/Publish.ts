@@ -290,7 +290,7 @@ cfgs Object 附加配置,要替换的配置内容
         for (let uri in dict) {
             let info = dict[uri];
             if (!info.isDel && info.version) {//版本号不为0，并且没有删除文件
-                let buffer = new Buffer(6);
+                let buffer = Buffer.alloc(6);
                 let hash = uri.hash();
                 let arr = tmpDict[hash];
                 if (!arr) {
