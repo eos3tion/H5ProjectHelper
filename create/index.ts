@@ -340,7 +340,7 @@ function copyWWWTemplateFiles(opt: ProjectOption) {
     if (!fs.statSync(defaultWWWTemplateFilesPath).isDirectory()) {
         return console.log(clcRed(`www的模板文件夹路径[${defaultWWWTemplateFilesPath}]被占用，请检查`));
     }
-    const { name, baseDir = defaultBaseDir, svnDir = defaultSVNDir } = opt;
+    const { name, baseDir = defaultBaseDir } = opt;
     let basePath = path.join(baseDir, name)
     let sharePath = path.join(basePath, defaultSharePath);
 
