@@ -237,7 +237,7 @@ function createDirectories(opt: ProjectOption) {
     let basePath = path.join(baseDir, name)
     let sharePath = path.join(basePath, defaultSharePath);
     checkAndMkDir(basePath);
-    createVerCfgs("cn", sharePath);
+    createVerCfgs("cn", sharePath, name);
     //创建res目录
     checkAndMkDir(path.join(sharePath, defaultResPath));
     //创建 temp 目录
@@ -246,7 +246,7 @@ function createDirectories(opt: ProjectOption) {
 
 
 
-function createVerCfgs(ver: string, basePath: string) {
+function createVerCfgs(ver: string, basePath: string, name: string) {
     basePath = path.join(basePath, defaultCfgPath);
     checkAndMkDir(basePath);
 
@@ -259,7 +259,7 @@ function createVerCfgs(ver: string, basePath: string) {
     const cfgJsonFile = path.join(verDir, "cfgs.json")
     if (!fs.existsSync(cfgJsonFile)) {
         let data = fs.readFileSync(defaultVerCfgTemplatePath, "utf8");
-        data = data.replace(/@ver@/g, ver);
+        data = data.replace(/@ver@/g, ver).replace(/@name@/g, name);
         fs.writeFileSync(cfgJsonFile, data);
     } else {
         return console.log(`${clcRed(`已经存在：`)}${clcYellow(cfgJsonFile)}`);
@@ -448,7 +448,7 @@ program.command("ver <name> <ver> [baseDir]")
     .action(function (name: string, ver: string, baseDir?: string) {
         baseDir = baseDir || path.join(defaultBaseDir, defaultSharePath);
         let base = path.join(baseDir, name);
-        createVerCfgs(ver, base);
+        createVerCfgs(ver, base, name);
     })
 
 program.parse(process.argv);
