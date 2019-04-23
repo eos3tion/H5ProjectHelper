@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "commonjs",
+    "outDir": "dist",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowJs": false
+  },
+  "exclude": [
+    "dist",
+    "temp",
+    "node_modules"
+  ]
+}
