@@ -83,7 +83,6 @@ interface Eff {
     spX?: number;
     spY?: number;
     ct?: number;
-    dur?: number;
 }
 
 /**
@@ -132,8 +131,8 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string) 
                     }
                     let layerID = [GameLayerID.BottomEffect, GameLayerID.CeilEffect, GameLayerID.UnderMap].indexOf(eff.layerID);
                     let data = [idx, eff.x, eff.y, layerID, (eff.sX || 1) * 100 >> 0, (eff.sY || 1) * 100 >> 0, eff.rotation || 0];
-                    if (eff.dur) {//有duration即可
-                        data.push(eff.dur, eff.speedX >> 0, eff.speedY >> 0, eff.seed);
+                    if (eff.duration) {//有duration即可
+                        data.push(eff.duration, eff.speedX >> 0, eff.speedY >> 0, eff.seed);
                     }
                     datas.push(data);
                 }
