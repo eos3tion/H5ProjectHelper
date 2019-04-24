@@ -29,6 +29,10 @@ interface ResInfo {
 
 interface BuildOption {
     /**
+     * 配置版本
+     */
+    cfgVer?: string;
+    /**
      * 嵌入的脚本，合并到所有脚本之前
      */
     beforeEmbedJs?: string[];
@@ -47,7 +51,7 @@ interface BuildOption {
     jsDir?: string;
     /**
      * 基础路径  
-     * 默认 `/data/projects`
+     * 默认 `f:/Builder/`
      */
     baseDir?: string;
 
@@ -337,6 +341,89 @@ interface BuildOption {
      * 远程运维机器的ip
      */
     opSSHIp?: string;
+
+    /**
+     * scp资源包的远程路径
+     */
+    scpRes?: string;
+    /**
+     * scp程序包的远程路径
+     */
+    scpApp?: string;
+
+    /**
+     * 目标web的zip的路径
+     */
+    zipPathApp?: string;
+    /**
+     * 目标res的zip的路径
+     */
+    zipPathRes?: string;
+
+    /**
+     * 操作结束后的钉钉回调
+     */
+    dingding?: DingDingMsg;
+
+    /**
+     * 是否处于wx小游戏的调试状态
+     */
+    wxappDebug?: boolean;
+
+    /**
+     * uglify参数
+     */
+    uglifyOptions?: import("uglify-js").MinifyOptions;
+
+    /**
+     * WebSocket代理地址
+     */
+    wsProxy?: string;
+
+    /**
+     * 游戏标题
+     */
+    title?: string;
+
+    /**
+     * 掌盟登录入口地址
+     */
+    zmGateUrl?: string;
+
+    /**
+     * 使用json的语言包文件路径  
+     * 如果不配置，则表示使用的js的语言包文件
+     */
+    useJsonLang?: string;
+}
+
+/**
+ * SCP的相关配置
+ */
+interface ScpDefine {
+    /**
+     * 远程地址
+     */
+    host: string,
+    /**
+     * 远程文件路径
+     */
+    path: string,
+    /**
+     * 本地文件路径
+     */
+    file: string
+}
+
+interface DingDingMsg {
+    /**
+     * 钉钉消息内容
+     */
+    msg: string;
+    /**
+     * 钉钉的回调地址
+     */
+    url: string;
 }
 
 interface BuildPlugin {
@@ -344,4 +431,33 @@ interface BuildPlugin {
     onCompile($: BuildOption);
 
     onBuildApp($: BuildOption);
+}
+
+interface ServerBuildOption {
+    /**
+     * 如 "server"
+     */
+    key: string;
+    /**
+     * 远程服务器sshIp
+     */
+    host: string;
+    /**
+     * 本地文件/文件夹路径
+     */
+    localPath: string;
+    /**
+     * 远程文件夹路径
+     */
+    remotePath: string;
+
+    /**
+     * 运维提供的更新脚本指令
+     */
+    cmd?: string;
+
+    /**
+     * 指令列表
+     */
+    buildCmds: string;
 }

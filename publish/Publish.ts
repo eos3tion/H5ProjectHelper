@@ -1,18 +1,19 @@
-import { sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, egret } from "./Helper";
+import { egret, sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, dingdingNotifer, scpForRemote } from "./Helper";
 import * as fs from "fs-extra";
 import * as path from "path";
 import { Buffer } from "buffer";
 import * as  archiver from "archiver";
 import * as wxgame from "./WXGame";
 import { clearCode } from "./ClearCode";
+import * as uglify from "uglify-js";
 import * as crypto from "crypto";
 
-function doSSH(cmd: string, $: BuildOption) {
+function doSSH(cmd: string, $: BuildOption, hideData?: boolean) {
     let ip = $.opSSHIp;
     if (ip && ip != "192.168.0.212") {
-        return sshForRemote(cmd, ip);
+        return sshForRemote(cmd, ip, undefined, undefined, hideData);
     } else {
-        return sshForLocal(cmd);
+        return sshForLocal(cmd, undefined, undefined, undefined, hideData);
     }
 }
 
@@ -70,7 +71,7 @@ export class PublishBase {
     /**
      * 发布时要拷贝的文件或文件夹
      */
-    buildFiles = ["src", "scripts", "index.html", "egretProperties.json", "tsconfig.json", "template", "h5core", "tools.json", "wxgame_tsd"];
+    buildFiles = ["src", "scripts", "index.html", "libs/modules", "egretProperties.json", "tsconfig.json", "typings", "template", "h5core", "tools.json", "wxgame_tsd"];
 
     /**
      * gameCfg的输出路径
@@ -103,9 +104,17 @@ cfgs Object 附加配置,要替换的配置内容
             func: this.updateRes,
             desc: `更新指定语言的资源文件`
         },
-        parseMapRes: {
-            func: this.parseMapRes,
-            desc: `处理地图资源`
+        scp: {
+            func: this.scp,
+            desc: `执行scp操作，scp({host:"192.168.0.1",path:"/data/upload/xxx",file:"//192.168.0.202/xx_version/xxx"})`
+        },
+        publishServer: {
+            func: this.publishServer,
+            desc: `将服务端脚本上传至服务器`
+        },
+        buildServer: {
+            func: this.buildServer,
+            desc: `将服务端发版并上传至服务器`
         }
     }
     init() {
@@ -116,6 +125,7 @@ cfgs Object 附加配置,要替换的配置内容
             let funcs = this.funcs;
             let func = m.func;
             let params = m.params;
+            let $: BuildOption;
             console.log("buildRC onmessage", m);
             if (func == "help") {
                 let handle = funcs[String(params)];
@@ -127,7 +137,7 @@ cfgs Object 附加配置,要替换的配置内容
                 let handle = funcs[func];
                 if (params == null || params instanceof Array) {
                     try {
-                        await handle.func.apply(this, params);
+                        $ = await handle.func.apply(this, params);
                     } catch (e) {
                         console.error(e.message);
                         return process.send("error");
@@ -135,6 +145,12 @@ cfgs Object 附加配置,要替换的配置内容
                 }
             } else {
                 console.log("非法的函数调用", func, params);
+            }
+            if ($) {
+                let dingding = $.dingding;
+                if (dingding) {
+                    dingdingNotifer(dingding);
+                }
             }
             process.send("done");
         });
@@ -246,17 +262,27 @@ cfgs Object 附加配置,要替换的配置内容
             //游戏配置文件的路径
             $.gameCfgPath = $.gameCfgPath || this.gameCfgOutput;
 
+            $.uglifyOptions = $.uglifyOptions || { compress: true };
+
+            //调整代理
+            $.wsProxy = $.wsProxy || "";
+
+            //页面标题
+            $.title = $.title || "";
+
+            $.zmGateUrl = $.zmGateUrl || "";
+
             $.inited = true;
         }
         return $;
     }
 
     /**
-     * 获取配置路径
-     * @param $ 
-     * @param lan 
-     * @param dir 
-     */
+      * 获取配置路径
+      * @param $ 
+      * @param lan 
+      * @param dir 
+      */
     getCfgPath($: BuildOption, lan: string, cfgsDir = "output", dir = "client") {
         return path.join(this.getWebDir($), "cfgs", lan, cfgsDir, dir);
     }
@@ -279,8 +305,8 @@ cfgs Object 附加配置,要替换的配置内容
     }
 
     /**
-     * 生成版本号文件
-     */
+    * 生成版本号文件
+    */
     makeVersionFile($: BuildOption = {}) {
         let { resCfgPath } = this.initOpt($);
         let dict = this.getResVersionDict($);
@@ -323,7 +349,7 @@ cfgs Object 附加配置,要替换的配置内容
 
 
     async buildApp($: BuildOption = {}) {
-        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath } = this.initOpt($);
+        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath, scpApp, scpRes, opSSHIp, wsProxy, zmGateUrl, title } = this.initOpt($);
         let result = /^(http[s]?):\/\/(.*?)$/.exec(git_path);
         if (result) {
             git_path = `${result[1]}://${git_user}:${git_pwd}@${result[2]}`;
@@ -403,7 +429,6 @@ cfgs Object 附加配置,要替换的配置内容
             if (fs.pathExistsSync(dir_before_coverd)) {
                 copy(dir_before_coverd, dir_tmp_publish);
             }
-
             let code = await executeCmd(egret, ["copylib"], { cwd: dir_tmp_publish });
             if (code) {
                 return console.log(`egret 发生错误，退出处理`);
@@ -472,10 +497,15 @@ cfgs Object 附加配置,要替换的配置内容
             //合并js文件
 
             let jsname = this.getJsName($);
-            this.mergeJS(webFolder, jsname + ".js");
+            this.mergeJS(webFolder, jsname + ".js", $);
             console.log(`尝试复制 lang.js 文件`);
             //将lang.js复制到项目文件夹中
-            copy(path.join($.dir_rawConfig, "lang.js"), path.join(webFolder, "lang.js"));
+            let useJsonLang = $.useJsonLang;
+            if (useJsonLang) {
+                copy(useJsonLang, path.join(webFolder, path.basename(useJsonLang)));
+            } else {
+                copy(path.join($.dir_rawConfig, "lang.js"), path.join(webFolder, "lang.js"));
+            }
             //替换index.html中的脚本名称
             let htmls = ["index.html"];
             if (pingtaihtmls) {
@@ -485,10 +515,16 @@ cfgs Object 附加配置,要替换的配置内容
                 file = path.join(webFolder, tmp);
                 cnt = fs.readFileSync(file, "utf8");
                 cnt = cnt.replace(/@ver@/g, jsname);
+                cnt = cnt.replace(/@wsProxy@/g, wsProxy);
+                cnt = cnt.replace(/@title@/g, title);
+                cnt = cnt.replace(/@zmGateUrl@/g, zmGateUrl);
                 fs.writeFileSync(file, cnt, "utf8");
             });
             if (pakApp) {
                 await this.pakApp(webFolder, $, { ignore: ["main.min.js", 'libs/**', 'h5core/**'] });
+                if (scpApp && opSSHIp) {
+                    await this.scp({ path: path.join(scpApp, this.getZipName($, "web")), host: opSSHIp, file: $.zipPathApp });
+                }
                 //执行运维脚本
                 let data = await doSSH($.upload_app, $);
                 console.log(data.output);
@@ -499,6 +535,9 @@ cfgs Object 附加配置,要替换的配置内容
 
             if ($.pakRes) {
                 await this.pakRes($);
+                if (scpRes && opSSHIp) {
+                    await this.scp({ path: path.join(scpRes, this.getZipName($, "res")), host: opSSHIp, file: $.zipPathRes });
+                }
                 //执行运维脚本
                 let data = await doSSH($.upload_res, $);
                 console.log(data.output);
@@ -507,7 +546,8 @@ cfgs Object 附加配置,要替换的配置内容
                 }
             }
         }
-        console.log("处理完成")
+        console.log("处理完成");
+        return $;
     }
 
     getJsName($: BuildOption) {
@@ -518,15 +558,22 @@ cfgs Object 附加配置,要替换的配置内容
     }
 
     async pakApp(webFolder: string, $: BuildOption, zipOpt?: any) {
-        let dist = path.join($.yunweiPath, "web", "web_" + $.buildTime + ".zip");
+        let type = "web";
+        let dist = path.join($.yunweiPath, type, this.getZipName($, type));
+        $.zipPathApp = dist;
         await makeZip(webFolder, dist, zipOpt);
+        return $;
+    }
+
+    getZipName($: BuildOption, type: string) {
+        return `${type}_${$.buildTime}.zip`;
     }
 
     /**
      * 合并js文件
      * @param webFolder 
      */
-    mergeJS(webFolder: string, dist: string) {
+    mergeJS(webFolder: string, dist: string, $: BuildOption) {
         let files = ["libs/modules/egret/egret.min.js", "libs/modules/egret/egret.web.min.js", "../../../h5core/bin/h5core/h5core.min.js", "main.min.js"];
         let content = "";
         files.forEach(file => {
@@ -540,11 +587,14 @@ cfgs Object 附加配置,要替换的配置内容
             }
         });
         content = clearCode(content);
-        fs.writeFileSync(path.join(webFolder, dist), content);
+        let out = uglify.minify(content, $.uglifyOptions);
+        const code = out.code || content;
+        fs.writeFileSync(path.join(webFolder, dist), code);
     }
 
-    buildLang() {
+    buildLang($: BuildOption) {
         // TODO 创建语言包文件
+        return $;
     }
 
     /**
@@ -567,7 +617,7 @@ cfgs Object 附加配置,要替换的配置内容
         //得到一份完整字典，将数据写入文件
         fs.writeJSONSync(resVersionFile, dict);
         console.log("writeTo", resVersionFile);
-
+        return $;
     }
     async solveLanFile(resPath: string, lanDict: object, dict: { [index: string]: ResInfo }, $: BuildOption) {
         let count = 0;
@@ -580,7 +630,7 @@ cfgs Object 附加配置,要替换的配置内容
                 needsolved.push(uri);
                 // dict[uri] = this.solveVersion(file, uri, dict, $.showFileSolveLog, solved);
             }
-        });
+        }, file => !file.startsWith(path.join(resPath, ".svn")));
         await this.checkSolve($, needsolved, dict);
         return count;
     }
@@ -606,8 +656,11 @@ cfgs Object 附加配置,要替换的配置内容
                 }
             }
         }
-        let dist = path.join($.yunweiPath, "res", "res_" + $.buildTime + ".zip");
+        let type = "res";
+        let dist = path.join($.yunweiPath, type, this.getZipName($, type));
+        $.zipPathRes = dist;
         await this.makeZip(list, dist, $.showFileSolveLog);
+        return $;
     }
 
 
@@ -617,7 +670,11 @@ cfgs Object 附加配置,要替换的配置内容
             let output = fs.createWriteStream(dist);
             //打包
             let arch = archiver("zip", { zlib: { level: 9 } });
-            arch.pipe(output);
+            try {
+                arch.pipe(output);
+            } catch (e) {
+                reject(e);
+            }
 
             for (let i = 0; i < list.length; i++) {
                 let { fullPath, uri } = list[i];
@@ -715,6 +772,7 @@ cfgs Object 附加配置,要替换的配置内容
         }
         //将数据写入文件
         fs.writeJSONSync(resVersionFile, dict);
+        return $;
     }
 
     async checkSolve($: BuildOption, needsolved: string[], dict: { [uri: string]: ResInfo }) {
@@ -822,6 +880,7 @@ cfgs Object 附加配置,要替换的配置内容
     /**
      * 处理由地图编辑器生成的地图
      * @param baseDir 输入路径
+     * @deprecated 目前h5直接使用 x_y.jpg 这种方式，不再由此脚本处理
      */
     async parseMapRes($: BuildOption = {}) {
         let { dir_res, resVersionFile, dir_mapRaw, dir_mapRelease, showFileSolveLog } = this.initOpt($);
@@ -895,7 +954,7 @@ cfgs Object 附加配置,要替换的配置内容
      */
     async getRemoteResHash($: BuildOption, result = { retry: 0 }): Promise<{ [uri: string]: string }> {
 
-        let obj = await doSSH($.get_res_md5, $);
+        let obj = await doSSH($.get_res_md5, $, true);
 
         //获取到流
         //流数据的结构是和运维协商的，如下所示
@@ -913,6 +972,7 @@ cfgs Object 附加配置,要替换的配置内容
         let len = lines.length - 1;
         let remoteDict: { [uri: string]: string };
         const remoteHashFile = path.join($.dir_tmp, "remoteHash.txt");
+        console.log("远程路径", remoteHashFile);
         if (lines[len] == "xuke success") {
             lines.pop();
             remoteDict = {};
@@ -949,5 +1009,78 @@ cfgs Object 附加配置,要替换的配置内容
         }
     }
 
+    async scp(params: ScpDefine) {
+        await scpForRemote(params.file, params.path, params.host);
+    }
 
+    async buildServer(opt: ServerBuildOption) {
+        // <!-- create deploy version -->
+        // <tstamp>
+        // 	<format property="deploy.time" pattern="yyyyMMdd_HHmmss" locale="en" />
+        // </tstamp>
+        // <!-- check out -->
+        // <sshexec host="${host}" username="${username}"  password="${password}" trust="true"
+        // 	command="source /etc/profile;cd /data/java-build-dir/zhh5_bt/out;svn checkout svn://192.168.0.202:8910/java/h5/zhh5/zhh5_server total_svn_co1 --username liujuan --password 123 --no-auth-cache" />
+
+        // <!-- deploy -->
+        // <sshexec host="${host}" username="${username}"  password="${password}" trust="true"
+        // 	command="source /etc/profile;cd /data/java-build-dir/zhh5_bt/out/total_svn_co1;/usr/local/apache-ant-1.9.4/bin/ant -f total-build-out-bt.xml -Ddeploy_time=${deploy.time} -Dncd=true -Dnsqld=false"/>
+        let deploy_time = new Date().format("yyyyMMdd_HHmmss");
+        const { buildCmds } = opt;
+        for (let i = 0; i < buildCmds.length; i++) {
+            let cmd = buildCmds[i];
+            cmd = cmd.replace("${deploy.time}", deploy_time)
+            await sshForLocal(cmd);
+        }
+        await this.publishServer(opt);
+    }
+
+    /**
+     * 更新服务器程序
+     * @param opt 
+     */
+    async publishServer(opt: ServerBuildOption) {
+        const { localPath, remotePath, host, cmd, key } = opt;
+        let localFile: string;
+        //检查目录
+        if (localPath && fs.existsSync(localPath)) {
+            let stat = fs.statSync(localPath);
+            if (stat.isFile()) {
+                localFile = localPath;
+            } else if (stat.isDirectory()) {
+                //查找最新的文件
+                let list = fs.readdirSync(localPath);
+                let len = list.length;
+                if (len) {
+                    //基于文件名，找到文件名最大的
+                    //server_20180925_150725.zip
+                    let max = "";
+                    let reg = new RegExp(`${key}_\\d{8}_\\d{6}\.zip`);
+                    for (let i = 0; i < len; i++) {
+                        let fileName = list[i];
+                        if (reg.test(fileName)) {
+                            let file = path.join(localPath, fileName);
+                            if (fs.statSync(file).isFile() && file > max) {
+                                max = file;
+                            }
+                        }
+                    }
+                    localFile = max;
+                }
+            }
+        }
+
+        if (localFile && fs.existsSync(localFile)) {
+            //尝试上传
+            await this.scp({ path: path.join(remotePath, path.basename(localFile)), host, file: localFile });
+            console.log("文件上传成功");
+            if (cmd) {
+                await sshForRemote(cmd, host);
+                console.log("更新脚本执行完毕");
+            }
+
+        } else {
+            console.log("找不到指定文件", localFile);
+        }
+    }
 }

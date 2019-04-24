@@ -43,15 +43,24 @@ export async function onCompile($: BuildOption) {
 }
 
 export function onBuildApp($: BuildOption) {
-    const { dir_rawConfig, dir_tmp_source, afterEmbedJs, beforeEmbedJs } = $;
+    const { dir_rawConfig, dir_tmp_source, afterEmbedJs, beforeEmbedJs, wxappDebug } = $;
+    let egretJson = fs.readJsonSync(path.join(dir_tmp_publish, "egretProperties.json"));
     const main = path.join(outFolder, "main.js");
-    let files = [
-        path.join(outFolder, "libs/modules/egret/egret.min.js"),
+    let egretModDirBase = path.join(dir_tmp_publish, "libs", "modules");
+    let files = [] as string[];
+    let min = wxappDebug ? "" : "min."
+
+    egretJson.modules.forEach(mod => {
+        let name = mod.name;
+        files.push(path.join(egretModDirBase, name, `${name}.${min}js`))
+    })
+
+    files.push(
         path.join(assets, "egret.wxgame.js"),
-        path.join(dir_tmp_source, "client", "/h5core/bin/h5core/h5core.min.js"),
+        path.join(dir_tmp_source, "client", `/h5core/bin/h5core/h5core.${min}js`),
         main,
         path.join(assets, "index.js")
-    ];
+    );
 
     if (beforeEmbedJs) {
         files = beforeEmbedJs.concat(files);
@@ -63,26 +72,25 @@ export function onBuildApp($: BuildOption) {
 
     let content = "";
     content += getCode(path.join(assets, "weapp-adapter.js")) + "\n";
-    content += getCode(path.join(dir_rawConfig, "lang.js")).replace("var $lang", "window.$lang") + "\n";
+    if (!$.useJsonLang) {
+        content += getCode(path.join(dir_rawConfig, "lang.js")).replace("var $lang", "window.$lang") + "\n";
+    }
     let egretCode = "";
     files.forEach(uri => {
         egretCode += getCode(uri) + "\n";
     });
 
-    content += clearCode(egretCode);
+    if (wxappDebug) {
+        content += egretCode;
+    } else {
+        content += clearCode(egretCode);
+    }
     content += "window.jy = jy;";
 
     content = content.replace(/@ver@/g, $.mainversion);
     //处理hash文件
-    // //@hash@
-    // let hash = "";
-    // let resCfgPath = $.resCfgPath;
-    // if (fs.existsSync(resCfgPath)) {
-    //     hash = fs.readFileSync($.resCfgPath).toString("base64");
-    // }
-    // content = content.replace(/@hash@/, hash);
-
-    let out = uglify.minify(content, { compress: true, output: { beautify: true } });
+    let settings = wxappDebug ? { compress: false, output: { beautify: true } } : $.uglifyOptions;
+    let out = uglify.minify(content, settings);
 
     const code = out.code;
     if (!code) {

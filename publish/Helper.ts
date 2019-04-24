@@ -8,6 +8,8 @@ import { Client, ConnectConfig } from "ssh2";
 import * as crypto from "crypto";
 import * as cwebp from "cwebp-bin";
 import { Buffer } from "buffer";
+import * as https from "https";
+import * as scp2 from "scp2";
 
 
 
@@ -39,7 +41,7 @@ function exec(opt: string | { cmd?: string, cwd?: string, notThrowError?: boolea
     return result;
 }
 
-function ssh(cmd: string, cfg: ConnectConfig) {
+function ssh(cmd: string, cfg: ConnectConfig, hideData?: boolean) {
     let output = [];
     return new Promise<{ code: number | null, signal?: string, output: string }>((resolve, reject) => {
         let con = new Client();
@@ -54,10 +56,10 @@ function ssh(cmd: string, cfg: ConnectConfig) {
                     resolve({ code, signal, output: Buffer.concat(output).toString("utf8") });
                 }).on('data', function (data) {
                     output.push(data);
-                    console.log(data.toString("utf8"));
+                    !hideData && console.log(data.toString("utf8"));
                 }).stderr.on('data', function (data: Buffer) {
                     output.push(data);
-                    console.log(data.toString("utf8"));
+                    !hideData && console.log(data.toString("utf8"));
                 });
             });
         }).on("error", err => {
@@ -330,8 +332,8 @@ function getMD5(data: string | Buffer) {
  * 执行212的指令
  * @param cmd 
  */
-function sshForLocal(cmd: string, ip = "192.168.0.202", keyPath = "/data/ssh_keys/local", username = "root") {
-    return ssh(cmd, { host: ip, privateKey: require('fs').readFileSync(keyPath), username, port: 22 });
+function sshForLocal(cmd: string, ip = "192.168.0.202", keyPath = "/data/ssh_keys/local", username = "root", hideData?: boolean) {
+    return ssh(cmd, { host: ip, privateKey: require('fs').readFileSync(keyPath), username, port: 22 }, hideData);
 }
 
 /**
@@ -340,10 +342,57 @@ function sshForLocal(cmd: string, ip = "192.168.0.202", keyPath = "/data/ssh_key
  * @param ip 
  * @param keyPath 
  */
-function sshForRemote(cmd: string, ip: string, keyPath = "/data/ssh_keys/remote", username = "root") {
-    return ssh(cmd, { host: ip, privateKey: require('fs').readFileSync(keyPath), username, port: 22 });
+function sshForRemote(cmd: string, ip: string, keyPath = "/data/ssh_keys/remote", username = "root", hideData?: boolean) {
+    return ssh(cmd, { host: ip, privateKey: require('fs').readFileSync(keyPath), username, port: 22 }, hideData);
 }
 
+/**
+ * 往远处主机拷贝文件
+ * @param src       本地目录
+ * @param dest 
+ * @param ip 
+ * @param keyPath 
+ */
+function scpForRemote(src: string, dest: string, ip: string, keyPath = "/data/ssh_keys/remote") {
+    return new Promise((resolve, reject) => {
+        let client = new scp2.Client({
+            port: 22,
+            host: ip,
+            username: "root",
+            privateKey: require('fs').readFileSync(keyPath)
+        })
+        console.log(`开始将文件${src}上传至服务器[${ip}]${dest}`)
+        client.upload(src, dest, err => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+                console.log(`上传完毕，文件${src}上传至服务器[${ip}]${dest}`)
+            }
+        })
+    })
+}
+
+/**
+ * 发送dingding消息
+ */
+function dingdingNotifer(opt: { msg: string, url: string }) {
+    const postData = JSON.stringify({
+        msgtype: "text",
+        text: {
+            content: opt.msg
+        }
+    })
+    let req = https.request(opt.url, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    })
+    req.write(postData);
+    req.end();
+}
 
 function copy(src: string, dest: string, showLog?: boolean, opt?: fs.CopyOptionsSync) {
     //检查目标文件是否和当前文件相同
@@ -372,5 +421,7 @@ export {
     webp,
     copy,
     sshForRemote,
-    egret
+    egret,
+    dingdingNotifer,
+    scpForRemote
 }
