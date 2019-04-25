@@ -395,6 +395,11 @@ interface BuildOption {
      * 如果不配置，则表示使用的js的语言包文件
      */
     useJsonLang?: string;
+
+    /**
+     * 要合并的文件列表
+     */
+    mergedFiles?: string[];
 }
 
 /**

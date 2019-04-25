@@ -78,6 +78,8 @@ export class PublishBase {
      */
     gameCfgOutput = "resource/game.json";
 
+    releaseMergedFiles = ["libs/modules/egret/egret.min.js", "libs/modules/egret/egret.web.min.js", "../../../h5core/bin/h5core/h5core.min.js", "main.min.js"];
+
     funcs: { [index: string]: { func?(...args); desc: string } } = {
         buildApp: {
             func: this.buildApp,
@@ -271,6 +273,8 @@ cfgs Object 附加配置,要替换的配置内容
             $.title = $.title || "";
 
             $.zmGateUrl = $.zmGateUrl || "";
+
+            $.mergedFiles = $.mergedFiles || this.releaseMergedFiles;
 
             $.inited = true;
         }
@@ -574,7 +578,7 @@ cfgs Object 附加配置,要替换的配置内容
      * @param webFolder 
      */
     mergeJS(webFolder: string, dist: string, $: BuildOption) {
-        let files = ["libs/modules/egret/egret.min.js", "libs/modules/egret/egret.web.min.js", "../../../h5core/bin/h5core/h5core.min.js", "main.min.js"];
+        let files = $.mergedFiles;
         let content = "";
         files.forEach(file => {
             let uri = path.join(webFolder, file);
