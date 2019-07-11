@@ -1,4 +1,4 @@
-import { egret, sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, dingdingNotifer, scpForRemote } from "./Helper";
+import { egret, sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, webhookNotifer, scpForRemote } from "./Helper";
 import * as fs from "fs-extra";
 import * as path from "path";
 import { Buffer } from "buffer";
@@ -149,9 +149,9 @@ cfgs Object 附加配置,要替换的配置内容
                 console.log("非法的函数调用", func, params);
             }
             if ($) {
-                let dingding = $.dingding;
+                let dingding = $.webhook;
                 if (dingding) {
-                    dingdingNotifer(dingding);
+                    webhookNotifer(dingding);
                 }
             }
             process.send("done");
@@ -359,7 +359,7 @@ cfgs Object 附加配置,要替换的配置内容
             git_path = `${result[1]}://${git_user}:${git_pwd}@${result[2]}`;
         }
 
-        checkGitDist(dir_tmp_source, git_path, git_branch);
+        let changelog = checkGitDist(dir_tmp_source, git_path, git_branch);
         let buildPlugin: BuildPlugin;
         if (buildType) {
             buildPlugin = plugins[buildType];
@@ -551,6 +551,10 @@ cfgs Object 附加配置,要替换的配置内容
             }
         }
         console.log("处理完成");
+        let dingding = $.webhook;
+        if (dingding) {
+            dingding.msg = changelog ? `发布${isRelease ? `正式版` : `nightly版`}${mainversion}，变更内容：\n${changelog}` : ``;
+        }
         return $;
     }
 

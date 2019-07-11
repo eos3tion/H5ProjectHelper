@@ -361,9 +361,9 @@ interface BuildOption {
     zipPathRes?: string;
 
     /**
-     * 操作结束后的钉钉回调
+     * 操作结束后的webhook回调
      */
-    dingding?: DingDingMsg;
+    webhook?: WebhookMsg;
 
     /**
      * 是否处于wx小游戏的调试状态
@@ -420,7 +420,7 @@ interface ScpDefine {
     file: string
 }
 
-interface DingDingMsg {
+interface WebhookMsg {
     /**
      * 钉钉消息内容
      */

@@ -70,7 +70,7 @@ function ssh(cmd: string, cfg: ConnectConfig, hideData?: boolean) {
 }
 
 function git(cmd: string, cwd: string, ...args) {
-    exec({ cmd: "git", cwd }, cmd, ...args);
+    return exec({ cmd: "git", cwd }, cmd, ...args);
 }
 function parseGitUrl(url: string, username: string, password: string) {
     let result = /^(http[s]?):\/\/(.*?)$/.exec(url);
@@ -210,10 +210,30 @@ function checkGitDist(dist: string, gitUrl: string, version = "master") {
 
     //切换到指定的版本
     git("checkout", dist, version);
-    git("pull", dist, "origin");
+    let result = git("pull", dist, "origin");
+    //得到版本改动信息
+    let output = result.stdout;
+    let changelog: string;
+    if (output) {
+        let content = output.toString();
+        if (content) {
+            let lines = content.split("\n");
+            //检查Line0的变更记录
+            let line0 = lines[0];
+            const U = "Updating ";
+            if (line0 && line0.startsWith(U)) {//更新记录
+                let ver = line0.substring(U.length);
+                let logResult = git("log", dist, ver, "--oneline");
+                if (logResult && logResult.stdout) {
+                    changelog = logResult.stdout.toString();
+                }
+            }
+        }
+    }
 
     git("submodule", dist, "init")
     git("submodule", dist, "update");
+    return changelog;
 }
 
 function walkDirs(dir: string, forEach: { (file: string, root: string, ) }, filter: { (file: string): boolean } = _file => true) {
@@ -374,9 +394,12 @@ function scpForRemote(src: string, dest: string, ip: string, keyPath = "/data/ss
 }
 
 /**
- * 发送dingding消息
+ * 发送webhook消息
  */
-function dingdingNotifer(opt: { msg: string, url: string }) {
+function webhookNotifer(opt: { msg: string, url: string }) {
+    if (!opt.msg) {
+        return;
+    }
     const postData = JSON.stringify({
         msgtype: "text",
         text: {
@@ -422,6 +445,6 @@ export {
     copy,
     sshForRemote,
     egret,
-    dingdingNotifer,
+    webhookNotifer,
     scpForRemote
 }
