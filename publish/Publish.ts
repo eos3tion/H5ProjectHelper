@@ -556,6 +556,7 @@ cfgs Object 附加配置,要替换的配置内容
         if (dingding) {
             dingding.msg = log;
         }
+        console.log(log);
         return $;
     }
 
