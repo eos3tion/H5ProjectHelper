@@ -18,16 +18,14 @@ function webp(input: string, output: string, quality = 75) {
 }
 
 
-function exec(opt: string | { cmd?: string, cwd?: string, notThrowError?: boolean }, ...args) {
+function exec(opt: string | { cmd?: string, cwd?: string, notThrowError?: boolean, stdio?: cp.StdioOptions }, ...args) {
     if (typeof opt === "string") {
         cmd = opt;
     } else {
-        var { cmd, cwd, notThrowError } = opt;
+        var { cmd, cwd, notThrowError, stdio = "inherit" } = opt;
     }
-    let option: cp.SpawnOptions = { stdio: "inherit" };
-    if (cwd) {
-        option.cwd = cwd;
-    }
+    let option = { stdio, cwd } as cp.SpawnOptions;
+
     let result = cp.spawnSync(cmd, args, option);
     let cmdstring = `${cmd} ${args.join(" ")}`;
     console.log("开始执行：", cmdstring);
@@ -35,9 +33,6 @@ function exec(opt: string | { cmd?: string, cwd?: string, notThrowError?: boolea
         console.error(`status:${result.status},${result.stderr ? result.stderr.toString() : `执行失败：\t${cmdstring}`}`);
     }
     console.log("执行完成：", cmdstring);
-    if (result.stdout) {
-        console.log(result.stdout);
-    }
     return result;
 }
 
@@ -70,7 +65,14 @@ function ssh(cmd: string, cfg: ConnectConfig, hideData?: boolean) {
 }
 
 function git(cmd: string, cwd: string, ...args) {
-    return exec({ cmd: "git", cwd }, cmd, ...args);
+    let result = exec({ cmd: "git", cwd, stdio: "pipe" }, cmd, ...args);
+    if (result.stderr) {
+        console.error(result.stderr.toString());
+    }
+    if (result.stdout) {
+        console.log(result.stdout.toString());
+    }
+    return result;
 }
 function parseGitUrl(url: string, username: string, password: string) {
     let result = /^(http[s]?):\/\/(.*?)$/.exec(url);
@@ -220,9 +222,8 @@ function checkGitDist(dist: string, gitUrl: string, version = "master") {
             let lines = content.split("\n");
             //检查Line0的变更记录
             let line0 = lines[0];
-            const U = "Updating ";
-            if (line0 && line0.startsWith(U)) {//更新记录
-                let ver = line0.substring(U.length);
+            if (line0 && /(Updating|更新)[ ](.*)/.test(line0)) {//更新记录
+                let ver = RegExp.$2;
                 let logResult = git("log", dist, ver, "--oneline");
                 if (logResult && logResult.stdout) {
                     changelog = logResult.stdout.toString();
@@ -233,6 +234,7 @@ function checkGitDist(dist: string, gitUrl: string, version = "master") {
 
     git("submodule", dist, "init")
     git("submodule", dist, "update");
+    console.log("changelog", changelog);
     return changelog;
 }
 

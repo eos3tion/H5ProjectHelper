@@ -551,9 +551,10 @@ cfgs Object 附加配置,要替换的配置内容
             }
         }
         console.log("处理完成");
+        const log = `发布${isRelease ? `正式版` : `nightly版`}${mainversion}${changelog ? `，变更内容：\n${changelog}` : ``}`
         let dingding = $.webhook;
         if (dingding) {
-            dingding.msg = changelog ? `发布${isRelease ? `正式版` : `nightly版`}${mainversion}，变更内容：\n${changelog}` : ``;
+            dingding.msg = log;
         }
         return $;
     }
