@@ -71,7 +71,7 @@ export class PublishBase {
     /**
      * 发布时要拷贝的文件或文件夹
      */
-    buildFiles = ["src", "scripts", "index.html", "libs/modules", "egretProperties.json", "tsconfig.json", "typings", "template", "h5core", "tools.json", "wxgame_tsd"];
+    buildFiles = ["src", "scripts", "index.html", "libs", "egretProperties.json", "tsconfig.json", "typings", "template", "h5core", "tools.json", "wxgame_tsd"];
 
     /**
      * gameCfg的输出路径
