@@ -2,7 +2,7 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import { copy, executeCmd, egret } from "./Helper";
 import { clearCode } from "./ClearCode";
-import * as uglify from "uglify-js";
+import * as uglify from "uglify-es";
 
 let outFolder: string;
 let dir_tmp_publish: string;
@@ -63,10 +63,16 @@ export function onBuildApp($: BuildOption) {
     );
 
     if (beforeEmbedJs) {
+        beforeEmbedJs.forEach((v, i, arr) => {
+            arr[i] = v.replace("./", dir_tmp_source + "/")
+        })
         files = beforeEmbedJs.concat(files);
     }
 
     if (afterEmbedJs) {
+        afterEmbedJs.forEach((v, i, arr) => {
+            arr[i] = v.replace("./", dir_tmp_source + "/")
+        })
         files = files.concat(afterEmbedJs);
     }
 

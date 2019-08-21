@@ -5,7 +5,7 @@ import { Buffer } from "buffer";
 import * as  archiver from "archiver";
 import * as wxgame from "./WXGame";
 import { clearCode } from "./ClearCode";
-import * as uglify from "uglify-js";
+import * as uglify from "uglify-es";
 import * as crypto from "crypto";
 
 function doSSH(cmd: string, $: BuildOption, hideData?: boolean) {
