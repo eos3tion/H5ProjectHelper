@@ -506,9 +506,9 @@ cfgs Object 附加配置,要替换的配置内容
             //将lang.js复制到项目文件夹中
             let useJsonLang = $.useJsonLang;
             if (useJsonLang) {
-                copy(useJsonLang, path.join(webFolder, path.basename(useJsonLang)));
+                copy(useJsonLang, path.join(webFolder, "resource", path.basename(useJsonLang)), $.showFileSolveLog);
             } else {
-                copy(path.join($.dir_rawConfig, "lang.js"), path.join(webFolder, "lang.js"));
+                copy(path.join($.dir_rawConfig, "lang.js"), path.join(webFolder, "lang.js"), $.showFileSolveLog);
             }
             //替换index.html中的脚本名称
             let htmls = ["index.html"];
