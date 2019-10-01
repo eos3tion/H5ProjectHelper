@@ -4,6 +4,7 @@ import * as path from "path";
 import { Buffer } from "buffer";
 import * as  archiver from "archiver";
 import * as wxgame from "./WXGame";
+import * as qhgame from "./QHGame";
 import { clearCode } from "./ClearCode";
 import * as uglify from "uglify-es";
 import * as crypto from "crypto";
@@ -18,7 +19,8 @@ function doSSH(cmd: string, $: BuildOption, hideData?: boolean) {
 }
 
 const plugins: { [buildType: string]: BuildPlugin } = {
-    "wxgame": wxgame
+    "wxgame": wxgame,
+    "qhgame": qhgame
 };
 
 export class PublishBase {
