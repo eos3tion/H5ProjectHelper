@@ -189,8 +189,31 @@ const svn = {
      * @param {string} source   要切换的svn源路径
      * @param {string} distDir  要切换的本地路径
      */
-    switch(source, distDir) {
+    switch(source: string, distDir: string) {
         return svnExec("switch", { stdio: "pipe", cwd: distDir }, source, distDir);
+    },
+    /**
+     * 检查文件夹状态
+     * @param distDir 
+     */
+    status(distDir: string) {
+        return svnExec("status", { stdio: "pipe", cwd: distDir }, distDir);
+    },
+    /**
+     * 添加文件到svn
+     * @param source 要添加的文件路径
+     * @param cwd 工作目录
+     */
+    add(source: string, cwd: string) {
+        return svnExec("add", { stdio: "pipe", cwd: cwd }, source);
+    },
+    /**
+     * svn提交指定文件
+     * @param source 要提交的文件
+     * @param distDir 
+     */
+    commit(source: string, distDir: string, msg = "") {
+        return svnExec("commit", { stdio: "pipe", cwd: distDir }, source, distDir, "-m", msg);
     }
 }
 
