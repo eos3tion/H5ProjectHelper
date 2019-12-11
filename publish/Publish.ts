@@ -738,8 +738,14 @@ cfgs Object 附加配置,要替换的配置内容
             let line = lines[i];
             if (reg.test(line)) {
                 let op = RegExp.$1;
-                let uri = this.normalizeUri(RegExp.$2);
-                let fullUri = path.join(dir_res, uri);
+                let uri = RegExp.$2;
+                let fullUri;
+                if (uri.startsWith(dir_res)) {//linux下，svn会显示完整目录
+                    fullUri = uri;
+                } else {
+                    uri = this.normalizeUri(RegExp.$2);
+                    fullUri = path.join(dir_res, uri);
+                }
                 let isDir = fs.statSync(fullUri).isDirectory();
                 //先将uri格式化
                 switch (op) {
