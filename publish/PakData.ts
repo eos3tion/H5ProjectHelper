@@ -5,14 +5,14 @@
 import * as fs from "fs-extra";
 import * as path from "path";
 import { PublishBase } from "./Publish";
-
+const PstFileName = "pst.json";
 /**
  * 为客户端打包
  *
  * @param {string} inputDir 输入文件夹
  * @param {string} outFile 输出文件
  */
-function packageForClient(inputDir: string, outFile: string, aniPath: string) {
+function packageForClient(inputDir: string, outFile: string, aniPath: string, pstPath?: string) {
     let p = fs.statSync(inputDir);
     if (!p.isDirectory()) {
         console.error("文件夹有误");
@@ -23,8 +23,15 @@ function packageForClient(inputDir: string, outFile: string, aniPath: string) {
     if (aniPath) {
         outData.push(getChunk("ani", 0, Buffer.from(JSON.stringify(parseAni(aniPath)))));
     }
+    if (pstPath) {
+        outData.push(getChunk("pst", 0, Buffer.from(JSON.stringify(parsePst(pstPath, path.join(inputDir, PstFileName))))));
+    }
+
     let flist = fs.readdirSync(inputDir);
     flist.forEach(file => {
+        if (pstPath && file == PstFileName) {
+            return
+        }
         let re = path.parse(file);
         let type: number;
         switch (re.ext) {
@@ -111,12 +118,46 @@ function walkDirs(dir, forEach, filter = (_file) => true) {
         }
     }
 }
+
+export function parsePst(pstPath: string, rawPstPath: string) {
+    console.log(`parsePst:${pstPath},${rawPstPath}`);
+    if (!fs.existsSync(pstPath)) {
+        console.log(`no pstPath:${pstPath}`);
+        return null;
+    }
+    var data = fs.existsSync(rawPstPath) ? fs.readJSONSync(rawPstPath) : {};
+    let p = fs.statSync(pstPath);
+    if (!p.isDirectory()) {
+        console.error("给的pst路径文件夹有误");
+        return null;
+    }
+    walkDirs(pstPath, file => {
+        let p = path.dirname(file);
+        let subDir = path.relative(pstPath, p);
+        let dp = path.join(p, PstFileName);
+        if (fs.existsSync(dp)) {
+            //有这两个文件，ani文件夹有效
+            let dat;
+            try {
+                dat = fs.readJSONSync(dp);
+            } catch (e) {
+                console.error(`解析pst数据，${dp}时出错`, e.message, e.stack);
+                return;
+            }
+            if (dat && dat.output) {
+                data[subDir] = dat.output;
+            }
+        }
+    });
+    return data;
+}
+
 /**
  * 处理ani文件夹
  *
  * @param {string} aniPath ani文件处理路径
  */
-function parseAni(aniPath, saveTexture = true) {
+function parseAni(aniPath: string, saveTexture = true) {
     console.log(`parseAni:${aniPath}`);
     if (!fs.existsSync(aniPath)) {
         console.log(`no aniPath:${aniPath}`);
