@@ -400,6 +400,11 @@ interface BuildOption {
      * 要合并的文件列表
      */
     mergedFiles?: string[];
+    
+    /**
+     * 如果配置了pstPath，则回去打包pstPath中的pst数据
+     */
+    pstPath?: string;
 }
 
 /**

@@ -209,6 +209,10 @@ if (argv0) {
     let clientDir = a.getCfgPath(opt, opt.lan, "raw");
     a.updateRes(opt);
     let aniPath = path.join(opt.dir_res, "a");
-    packageForClient(clientDir, path.join(packageRoot, cfgBinName), aniPath);
+    let pstPath = opt.pstPath;
+    if (pstPath) {
+        pstPath = path.join(opt.dir_res, pstPath);
+    }
+    packageForClient(clientDir, path.join(packageRoot, cfgBinName), aniPath, pstPath);
 }
 console.log("complete");
