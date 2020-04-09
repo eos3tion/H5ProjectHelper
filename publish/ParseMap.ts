@@ -17,6 +17,16 @@ interface MapJSONData {
      * 地图数据
      */
     mapBytesB64: string;
+
+    pWidth: number;
+
+    pHeight: number;
+
+    maxPicX: number;
+
+    maxPicY: number;
+
+    pathType: number;
 }
 
 /**
@@ -54,13 +64,17 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string) 
                 len++;
                 const javapath = path.join(dirpath, Const.JavaMapPath);
                 if (fs.existsSync(javapath)) {
+                    let buffer = Buffer.from(mapBytesB64, "base64");
                     //添加配置
                     const javaData = {
                         collect: "item.dat",
                         id: cfg.path,
                         mapid: cfg.path,
+                        width: cfg.maxPicX * cfg.pWidth,
+                        height: cfg.maxPicY * cfg.pHeight,
                         monster: "",
-                        path: Const.JavaMapPath
+                        path: Const.JavaMapPath,
+                        pathData: buffer
                     }
                     javaDatas.push(javaData);
                 }
