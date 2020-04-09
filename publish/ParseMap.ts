@@ -71,6 +71,7 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string) 
                         mapid: cfg.path,
                         width: cfg.maxPicX * cfg.pWidth,
                         height: cfg.maxPicY * cfg.pHeight,
+                        pathType: cfg.pathType,
                         monster: "",
                         path: Const.JavaMapPath
                     }
