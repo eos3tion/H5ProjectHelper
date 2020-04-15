@@ -1,3 +1,4 @@
+/// <reference path="../Define.d.ts" />
 import * as ws from "ws";
 import * as repl from "repl";
 import * as cp from "child_process";
@@ -44,8 +45,7 @@ function zeroize(value: number | string, length = 2): string {
     return zeros + str;
 }
 
-Date.prototype.format = function (mask, local?: boolean) {
-    let d: Date = this;
+function format(d: Date, mask: string, local?: boolean) {
     return mask.replace(/"[^"]*"|'[^']*'|(?:d{1,2}|m{1,2}|yy(?:yy)?|([hHMs])\1?)/g, function ($0): any {
         switch ($0) {
             case "d": return gd();
@@ -309,7 +309,7 @@ class Project {
     }
 
     getPrefix() {
-        return `${new Date().format("yyyy-MM-dd HH:mm:ss")},【${this.name}】`;
+        return `${format(new Date(), "yyyy-MM-dd HH:mm:ss")},【${this.name}】`;
     }
 
     broadcast(message: Message | string) {
