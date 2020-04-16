@@ -144,13 +144,13 @@ export function parsePst(pstPath: string, rawPstPath: string) {
                 console.error(`解析pst数据，${dp}时出错`, e.message, e.stack);
                 return;
             }
-            let keys = Object.keys(data);
+            let keys = Object.keys(dat);
             let key = "output";
             if (keys && keys.length == 1) {
                 key = keys[0];
             }
             if (dat && dat[key]) {
-                data[subDir] = dat.output;
+                data[subDir] = dat[key];
             }
         }
     });
