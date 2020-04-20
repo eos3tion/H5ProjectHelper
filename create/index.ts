@@ -34,17 +34,17 @@ const defaultTrunkName = "trunk";
 /**
  * svn基础目录
  */
-const defaultSVNReposDir = "/data/svn/repos";
+const defaultSVNReposDir = "/data/svn/repo";
 
 /**
  * svn远程目录
  */
-const defaultSVNDir = "svn://192.168.9.187:3333/";
+const defaultSVNDir = "svn://192.168.9.26:3333/";
 
 /**
  * svn repo的模板路径
  */
-const defaultSVNTempDir = "/data/svn/repos/repo_temp";
+const defaultSVNTempDir = "/data/svn/repo/repo_temp";
 
 const dirStruct = {
     "output": {
@@ -75,7 +75,7 @@ function getNginxMainCfgTemplate(opt: ProjectOption) {
     const { name, baseDir = defaultBaseDir } = opt;
     return `
 server {
-	server_name ${name}.h5;
+	server_name ${name}.h5.tpulse.cn;
 	listen 80;
     expires -1s;
         
@@ -105,7 +105,7 @@ function getNginxHttpsCfgTemplate(opt: ProjectOption) {
     const { name } = opt;
     return `
 location /${name}/ {
-    proxy_pass http://${name}.h5/;
+    proxy_pass http://${name}.h5.tpulse.cn/;
     proxy_set_header X-Real_IP $remote_addr;
     proxy_set_header X-Forwarded-For $remote_addr;
 }
