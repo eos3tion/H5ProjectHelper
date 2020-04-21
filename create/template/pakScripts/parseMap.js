@@ -16,6 +16,6 @@ const webPath = `${baseDir}/${project}/www`;
 const cfgDir = `${webPath}/cfgs/${lan}/raw/client/`;
 const mapPath = `${webPath}/res/${defaultLan}/m`;
 
-const javaPath = `${webPath}/cfgs/${lan}/output/${version}server/maplist.dat`;
+const javaPath = `${webPath}/cfgs/${lan}${version}/output/server/maplist.dat`;
 ParseMap.parseMap(cfgDir, mapPath, javaPath);
 cp.fork(pakDataPath, [JSON.stringify({ project, version })]);

@@ -1,6 +1,6 @@
 {
     "project": "@name@",
-    "origin": "//192.168.9.187/common/cfgsbase.json",
+    "origin": "//192.168.9.26/common/cfgsbase.json",
     "lan": "@ver@",
-    "endAction": "http://action.build.h5//data/projects/${project}/pakData.js"
+    "endAction": "http://action.build.h5.tpulse.cn//data/projects/${project}/pakData.js|${version}"
 }
