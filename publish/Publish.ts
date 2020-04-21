@@ -24,7 +24,7 @@ const plugins: { [buildType: string]: BuildPlugin } = {
 };
 
 export class PublishBase {
-    serverCfgPath = "/data/server_cfgs";
+    serverCfgPath = "/data/server_cfgs/cfgs";
     serverCfgGitUrl = "git@gitlab.tpulse.cn:tpulse/cfgs.git";
     /**
      * 配置文件名
@@ -40,7 +40,7 @@ export class PublishBase {
     /**
      * 项目svn地址
      */
-    svnPath = "svn://192.168.9.187:3333";
+    svnPath = "svn://192.168.9.26:3333";
 
     /**
      * 默认语言
@@ -122,8 +122,8 @@ cfgs Object 附加配置,要替换的配置内容
             func: this.buildServer,
             desc: `将服务端发版并上传至服务器`
         },
-        createBranchTag: {
-            func: this.createBranchTag,
+        createBranch: {
+            func: this.createBranch,
             desc: `创建一个分支`
         }
     }
@@ -1108,7 +1108,7 @@ cfgs Object 附加配置,要替换的配置内容
         }
     }
 
-    createBranchTag($: BuildOption, svnPath: string) {
+    async createBranch($: BuildOption) {
         //创建一个分支
         //1. 策划填写版本号，并点击生成
         //2. 程序基于当前master版本打个Tag
@@ -1137,43 +1137,66 @@ cfgs Object 附加配置,要替换的配置内容
         git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
 
         //创建配置svn版本分支
-        const svnCommitMSG = `创建分支：${version}`
+        const svnCommitMSG = `"创建分支：${version}"`;
+        const svnPath = this.svnPath;
         let cfgSVNSource = `${svnPath}/${project}/trunk/cfgs/${lan}/`;
         let cfgSVNDist = `${svnPath}/${project}/branch/${version}`
-        svn.cp(cfgSVNSource, cfgSVNDist, svnCommitMSG);
-
-        //将文件globalCfg.json附带版本号，提交至cfgs
-        let template = globalCfgTemplate
-            .replace(/\{project\}/g, project)
-            .replace(/\{lan\}/g, lan)
-            .replace(/\{version\}/g, version);
-
-        //先将模板写入临时路径
-        let cfgPath = path.join(dir_tmp, "globalCfg", version);
-        fs.outputFileSync(cfgPath, template, svnCommitMSG);
-        //将分支中globalCfg.json删除
-        let svnGlobalCfgPath = `${cfgSVNDist}/globalConfig.json`;
+        //检查svn分支是否已经存在
+        let exists = false;
         try {
-            svn.delete(svnGlobalCfgPath, svnCommitMSG);
-        } catch { }//无视错误
-        svn.import(cfgPath, svnGlobalCfgPath, svnCommitMSG);
+            svn.ls(cfgSVNDist);
+            exists = true;
+        } catch{ }
+        if (exists) {
+            console.log("已经存在", cfgSVNDist)
+        } else {
+            svn.cp(cfgSVNSource, cfgSVNDist, svnCommitMSG);
+            //将文件globalCfg.json附带版本号，提交至cfgs
+            let template = globalCfgTemplate
+                .replace(/\{project\}/g, project)
+                .replace(/\{lan\}/g, lan)
+                .replace(/\{version\}/g, version);
+
+            //先将模板写入临时路径
+            let cfgPath = path.join(dir_tmp, "globalCfg", version);
+            fs.outputFileSync(cfgPath, template);
+            //将分支中globalCfg.json删除
+            let svnGlobalCfgPath = `${cfgSVNDist}/globalConfig.json`;
+            try {
+                svn.delete(svnGlobalCfgPath, svnCommitMSG);
+            } catch { }//无视错误
+            svn.import(cfgPath, svnGlobalCfgPath, svnCommitMSG);
+        }
 
         //将已经提交的配置，创建副本
-        let masterCfgOutput = this.getCfgPath($, lan, "", "");
-        let masterRaw = this.getCfgPath($, lan, "", "raw");
-        let versionCfgOutput = this.getCfgPath($, lan, version, "");
-        let versionRaw = this.getCfgPath($, lan, version, "raw");
+        let masterCfgOutput = this.getCfgPath($, lan, "", "output", "");
+        let masterRaw = this.getCfgPath($, lan, "", "raw", "");
+        let versionCfgOutput = this.getCfgPath($, lan, version, "output", "");
+        let versionRaw = this.getCfgPath($, lan, version, "raw", "");
+        console.log("try copy", masterCfgOutput, versionCfgOutput)
         fs.copySync(masterCfgOutput, versionCfgOutput);
+        console.log("try copy", masterRaw, versionRaw)
         fs.copySync(masterRaw, versionRaw);
 
-        //将文件提交到git
-        checkGitDist(this.serverCfgPath, this.serverCfgGitUrl);
+        
         let versionCfgRoot = this.getCfgPath($, lan, version, "", "");
-        const serverCfgGitRoot = path.join(this.serverCfgPath, "cfgs");
-        const distPath = path.join(serverCfgGitRoot, "src", project, lan, version);
-        fs.copySync(versionCfgRoot, distPath);
-        git("add", serverCfgGitRoot, ".");
-        git("commit", serverCfgGitRoot, "-m", `配置更新，version:${version}`);
-        git("push", serverCfgGitRoot, "origin");
+        //对文件夹给与执行权限
+        //chmod -R 777
+        try {
+            await executeCmd("chmod", ["-R", "777", versionCfgRoot]);
+        } catch (e) {
+            console.log(e);
+        }
+
+        // //将文件提交到git
+        // let serverCfgGitRoot = this.serverCfgPath;
+        // checkGitDist(serverCfgGitRoot, this.serverCfgGitUrl);
+
+        // const distPath = path.join(serverCfgGitRoot, "src", project, lan, version);
+        // console.log("try copy", versionCfgRoot, distPath)
+        // fs.copySync(versionCfgRoot, distPath);
+        // git("add", serverCfgGitRoot, ".");
+        // git("commit", serverCfgGitRoot, "-m", `配置更新，version:${version}`);
+        // git("push", serverCfgGitRoot, "origin");
     }
 }

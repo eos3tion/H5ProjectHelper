@@ -28,7 +28,7 @@ function exec(opt: string | { cmd?: string, cwd?: string, notThrowError?: boolea
 
     let result = cp.spawnSync(cmd, args, option);
     let cmdstring = `${cmd} ${args.join(" ")}`;
-    console.log("开始执行：", cmdstring);
+    console.log(`在目录[${cwd}]开始执行：`, cmdstring);
     if (result.status && !notThrowError) {
         console.error(`status:${result.status},${result.stderr ? result.stderr.toString() : `执行失败：\t${cmdstring}`}`);
     }
@@ -216,13 +216,16 @@ const svn = {
         return svnExec("commit", { stdio: "pipe", cwd: distDir }, source, distDir, "-m", msg);
     },
     cp(source: string, dist: string, msg = "") {
-        return svnExec("copy", null, source, dist, "-m", msg);
+        return svnExec("copy", { stdio: "pipe" }, source, dist, "-m", msg);
+    },
+    ls(source: string) {
+        return svnExec("ls", { stdio: "pipe" }, source);
     },
     delete(source: string, msg = "") {
-        return svnExec("rm", null, source, "-m", msg);
+        return svnExec("rm", { stdio: "pipe" }, source, "-m", msg);
     },
     import(source: string, dist: string, msg = "") {
-        return svnExec("import", null, source, dist, "-m", msg);
+        return svnExec("import", { stdio: "pipe" }, source, dist, "-m", msg);
     }
 }
 
