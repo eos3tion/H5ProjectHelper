@@ -1119,7 +1119,8 @@ cfgs Object 附加配置,要替换的配置内容
         let { git_user, dir_tmp, buildTime, git_pwd, version, project, git_path, dir_tmp_source, lan,
             globalCfgTemplate = `{
         "origin":"//h5.tpulse.cn/{project}/cfgs/{lan}/cfgs.json",
-        "version":"{version}"
+        "version":"{version}/",
+        "endAction":"http://action.build.h5.tpulse.cn//data/projects/{project}/pakData.js?{version}"
     }` } = this.initOpt($);
 
         if (!version) {
