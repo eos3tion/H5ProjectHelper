@@ -29,9 +29,9 @@ interface ResInfo {
 
 interface BuildOption {
     /**
-     * 配置版本
+     * 策划定义的版本
      */
-    cfgVer?: string;
+    version?: string;
     /**
      * 嵌入的脚本，合并到所有脚本之前
      */
@@ -400,11 +400,23 @@ interface BuildOption {
      * 要合并的文件列表
      */
     mergedFiles?: string[];
-    
+
     /**
      * 如果配置了pstPath，则回去打包pstPath中的pst数据
      */
     pstPath?: string;
+
+    /**
+     * 拖表配置文件的模板  
+     * 默认为
+     * ```json
+     * {
+     * 	"origin":"//h5.tpulse.cn/{project}/cfgs/{lan}/cfgs.json",
+     * 	"version":"{version}"
+     * }
+     * ```
+     */
+    globalCfgTemplate?: string;
 }
 
 /**

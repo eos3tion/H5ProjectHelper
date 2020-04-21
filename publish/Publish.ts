@@ -1,4 +1,4 @@
-import { egret, sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, webhookNotifer, scpForRemote } from "./Helper";
+import { egret, sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, webhookNotifer, scpForRemote, git } from "./Helper";
 import * as fs from "fs-extra";
 import * as path from "path";
 import { Buffer } from "buffer";
@@ -24,6 +24,8 @@ const plugins: { [buildType: string]: BuildPlugin } = {
 };
 
 export class PublishBase {
+    serverCfgPath = "/data/server_cfgs";
+    serverCfgGitUrl = "git@gitlab.tpulse.cn:tpulse/cfgs.git";
     /**
      * 配置文件名
      */
@@ -119,6 +121,10 @@ cfgs Object 附加配置,要替换的配置内容
         buildServer: {
             func: this.buildServer,
             desc: `将服务端发版并上传至服务器`
+        },
+        createBranchTag: {
+            func: this.createBranchTag,
+            desc: `创建一个分支`
         }
     }
     init() {
@@ -191,15 +197,15 @@ cfgs Object 附加配置,要替换的配置内容
             $.mainversion = $.mainversion || $.lan + "." + $.buildVersion + "." + $.buildTime;
 
             //原始语言版(一般为中文版)的路径
-            $.dir_defConfig = $.dir_defConfig || this.getCfgPath($, this.defaultLan);
+            $.dir_defConfig = $.dir_defConfig || this.getCfgPath($, this.defaultLan, $.version);
 
-            $.dir_rawConfig = $.dir_rawConfig || this.getCfgPath($, $.lan, "raw")
+            $.dir_rawConfig = $.dir_rawConfig || this.getCfgPath($, $.lan, $.version, "raw")
 
             //发布版配置路径
             $.dir_pubConfig = $.dir_pubConfig || ($.lan == this.defaultLan ? $.dir_defConfig/*原始语言使用原始配置路径*/ : this.getCfgPath($, $.lan));
 
             //配置的原始路径
-            $.dir_srcConfig = $.dir_srcConfig || this.getCfgPath($, $.lan);
+            $.dir_srcConfig = $.dir_srcConfig || this.getCfgPath($, $.lan, $.version);
 
             $.svn_project_trunk = $.svn_project_trunk || this.svn_project_trunk || `${this.svnPath}/${$.project}/trunk`;
 
@@ -289,8 +295,8 @@ cfgs Object 附加配置,要替换的配置内容
       * @param lan 
       * @param dir 
       */
-    getCfgPath($: BuildOption, lan: string, cfgsDir = "output", dir = "client") {
-        return path.join(this.getWebDir($), "cfgs", lan, cfgsDir, dir);
+    getCfgPath($: BuildOption, lan: string, version = "", cfgsDir = "output", dir = "client") {
+        return path.join(this.getWebDir($), "cfgs", lan, version, cfgsDir, dir);
     }
 
     /**
@@ -1100,5 +1106,73 @@ cfgs Object 附加配置,要替换的配置内容
         } else {
             console.log("找不到指定文件", localFile);
         }
+    }
+
+    createBranchTag($: BuildOption, svnPath: string) {
+        //创建一个分支
+        //1. 策划填写版本号，并点击生成
+        //2. 程序基于当前master版本打个Tag
+        //3. 创建策划配置版本分支
+        //3.1. 写入配置路径下对应globalCfg.json并调整路径到对应配置的指向
+        //4. 将当前策划配置的生成文件创建一个对应目录的配置文件夹
+        //4.1. 将刚刚创建的配置文件夹，制作一个副本，调度服务端一个配置git  
+        let { git_user, dir_tmp, buildTime, git_pwd, version, project, git_path, dir_tmp_source, lan,
+            globalCfgTemplate = `{
+        "origin":"//h5.tpulse.cn/{project}/cfgs/{lan}/cfgs.json",
+        "version":"{version}"
+    }` } = this.initOpt($);
+
+        if (!version) {
+            version = `V${buildTime}`;
+        }
+
+        //2. 创建程序版本分支
+        let result = /^(http[s]?):\/\/(.*?)$/.exec(git_path);
+        if (result) {
+            git_path = `${result[1]}://${git_user}:${git_pwd}@${result[2]}`;
+        }
+        checkGitDist(dir_tmp_source, git_path, "master");
+        //基于master创建 `version` 版本的 tag，并提交
+        git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
+
+        //创建配置svn版本分支
+        const svnCommitMSG = `创建分支：${version}`
+        let cfgSVNSource = `${svnPath}/${project}/trunk/cfgs/${lan}/`;
+        let cfgSVNDist = `${svnPath}/${project}/branch/${version}`
+        svn.cp(cfgSVNSource, cfgSVNDist, svnCommitMSG);
+
+        //将文件globalCfg.json附带版本号，提交至cfgs
+        let template = globalCfgTemplate
+            .replace(/\{project\}/g, project)
+            .replace(/\{lan\}/g, lan)
+            .replace(/\{version\}/g, version);
+
+        //先将模板写入临时路径
+        let cfgPath = path.join(dir_tmp, "globalCfg", version);
+        fs.outputFileSync(cfgPath, template, svnCommitMSG);
+        //将分支中globalCfg.json删除
+        let svnGlobalCfgPath = `${cfgSVNDist}/globalConfig.json`;
+        try {
+            svn.delete(svnGlobalCfgPath, svnCommitMSG);
+        } catch { }//无视错误
+        svn.import(cfgPath, svnGlobalCfgPath, svnCommitMSG);
+
+        //将已经提交的配置，创建副本
+        let masterCfgOutput = this.getCfgPath($, lan, "", "");
+        let masterRaw = this.getCfgPath($, lan, "", "raw");
+        let versionCfgOutput = this.getCfgPath($, lan, version, "");
+        let versionRaw = this.getCfgPath($, lan, version, "raw");
+        fs.copySync(masterCfgOutput, versionCfgOutput);
+        fs.copySync(masterRaw, versionRaw);
+
+        //将文件提交到git
+        checkGitDist(this.serverCfgPath, this.serverCfgGitUrl);
+        let versionCfgRoot = this.getCfgPath($, lan, version, "", "");
+        const serverCfgGitRoot = path.join(this.serverCfgPath, "cfgs");
+        const distPath = path.join(serverCfgGitRoot, "src", project, lan, version);
+        fs.copySync(versionCfgRoot, distPath);
+        git("add", serverCfgGitRoot, ".");
+        git("commit", serverCfgGitRoot, "-m", `配置更新，version:${version}`);
+        git("push", serverCfgGitRoot, "origin");
     }
 }

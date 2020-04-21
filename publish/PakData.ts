@@ -211,7 +211,7 @@ if (argv0) {
     let a = new PublishBase();
     opt = a.initOpt(opt);
     let packageRoot = opt.dir_srcConfig;
-    let clientDir = a.getCfgPath(opt, opt.lan, "raw");
+    let clientDir = a.getCfgPath(opt, opt.lan, opt.version, "raw");
     a.updateRes(opt);
     let aniPath = path.join(opt.dir_res, "a");
     let pstPath = opt.pstPath;

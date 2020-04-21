@@ -140,15 +140,15 @@ const svn = {
     * @param   {string} distDir 目标路径
     * @param   {string}	stdout	输出的方式,默认继承
     * @return : {Object}
-    * <ul>
-    * <li>pid Number Pid of the child process</li>
-    * <li>output Array Array of results from stdio output</li>
-    * <li>stdout Buffer|String The contents of output[1]</li>
-    * <li>stderr Buffer|String The contents of output[2]</li>
-    * <li>status Number The exit code of the child process</li>
-    * <li>signal String The signal used to kill the child process</li>
-    * <li>error Error The error object if the child process failed or timed out</li>
-    * </ul>
+    * 
+    * * pid Number Pid of the child process
+    * * output Array Array of results from stdio output
+    * * stdout Buffer|String The contents of output[1]
+    * * stderr Buffer|String The contents of output[2]
+    * * status Number The exit code of the child process
+    * * signal String The signal used to kill the child process
+    * * error Error The error object if the child process failed or timed out
+    * 
     */
     update(distDir: string) {
         return svnExec("update", { stdio: "pipe", cwd: distDir }, distDir);
@@ -214,6 +214,15 @@ const svn = {
      */
     commit(source: string, distDir: string, msg = "") {
         return svnExec("commit", { stdio: "pipe", cwd: distDir }, source, distDir, "-m", msg);
+    },
+    cp(source: string, dist: string, msg = "") {
+        return svnExec("copy", null, source, dist, "-m", msg);
+    },
+    delete(source: string, msg = "") {
+        return svnExec("rm", null, source, "-m", msg);
+    },
+    import(source: string, dist: string, msg = "") {
+        return svnExec("import", null, source, dist, "-m", msg);
     }
 }
 
