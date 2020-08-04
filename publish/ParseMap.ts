@@ -34,7 +34,7 @@ interface MapJSONData {
  * @param cfgDir 配置路径
  * @param mapPath 地图路径
  */
-export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string) {
+export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string, isJson?: boolean) {
     svn.cleanup(mapPath);
     svn.update(mapPath);
     const dirs = fs.readdirSync(mapPath);
@@ -62,20 +62,24 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string) 
             if (mapBytesB64) {
                 pos = writeB64(mapBytesB64, temp, pos);
                 len++;
-                const javapath = path.join(dirpath, Const.JavaMapPath);
-                if (fs.existsSync(javapath)) {
-                    //添加配置
-                    const javaData = {
-                        collect: "item.dat",
-                        id: cfg.path,
-                        mapid: cfg.path,
-                        width: cfg.maxPicX * cfg.pWidth,
-                        height: cfg.maxPicY * cfg.pHeight,
-                        pathType: cfg.pathType,
-                        monster: "",
-                        path: Const.JavaMapPath
+                if (isJson) {
+                    javaDatas.push(cfg);
+                } else {
+                    const javapath = path.join(dirpath, Const.JavaMapPath);
+                    if (fs.existsSync(javapath)) {
+                        //添加配置
+                        const javaData = {
+                            collect: "item.dat",
+                            id: cfg.path,
+                            mapid: cfg.path,
+                            width: cfg.maxPicX * cfg.pWidth,
+                            height: cfg.maxPicY * cfg.pHeight,
+                            pathType: cfg.pathType,
+                            monster: "",
+                            path: Const.JavaMapPath
+                        }
+                        javaDatas.push(javaData);
                     }
-                    javaDatas.push(javaData);
                 }
             }
         }
@@ -87,9 +91,13 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string) 
     console.log(`写入${cfgfile}`);
     //存储服务端文件
     if (javaCfgPath) {
-        const ba = new AMF3Bytes();
-        ba.writeObject(javaDatas);
-        fs.outputFileSync(javaCfgPath, ba.usedBuffer);
+        if (isJson) {
+            fs.outputJSONSync(javaCfgPath, javaDatas);
+        } else {
+            const ba = new AMF3Bytes();
+            ba.writeObject(javaDatas);
+            fs.outputFileSync(javaCfgPath, ba.usedBuffer);
+        }
         console.log(`写入${javaCfgPath}`);
     }
 }
