@@ -9,6 +9,14 @@ const enum Const {
     JavaMapPath = "path.mm",
 
     ClientMapDataPath = "maps.bin",
+    /**
+     * Tiled地图纹理配置文件名
+     */
+    TiledCfgPath = "tileset.json",
+    /**
+     * Tiled地图纹理配置路径
+     */
+    TiledCfgDir = "tiled",
 }
 
 interface MapJSONData {
@@ -38,6 +46,12 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string, 
     svn.cleanup(mapPath);
     svn.update(mapPath);
     const dirs = fs.readdirSync(mapPath);
+    //检查tiled地图
+    let tiledFullPath = path.join(mapPath, Const.TiledCfgDir, Const.TiledCfgPath);
+    if (fs.existsSync(tiledFullPath)) {
+        //有配置，将配置copy到数据路径
+        fs.copyFileSync(tiledFullPath, path.join(cfgDir, Const.TiledCfgPath));
+    }
     const javaDatas = [];
     //存储文件
     let temp = Buffer.alloc(1024 * 1024 * 10);
