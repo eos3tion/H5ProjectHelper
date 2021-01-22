@@ -77,6 +77,10 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string, 
                 pos = writeB64(mapBytesB64, temp, pos);
                 len++;
                 if (isJson) {
+                    //干掉服务端不用的大的数据
+                    delete cfg["tiledData"];
+                    delete cfg["adataB64"];
+                    delete cfg["effs"];
                     javaDatas.push(cfg);
                 } else {
                     const javapath = path.join(dirpath, Const.JavaMapPath);
