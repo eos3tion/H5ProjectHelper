@@ -80,6 +80,7 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string, 
                     //干掉服务端不用的大的数据
                     delete cfg["tiledData"];
                     delete cfg["adataB64"];
+                    delete cfg["mapBytesB64"];
                     delete cfg["effs"];
                     javaDatas.push(cfg);
                 } else {
