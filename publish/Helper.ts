@@ -259,7 +259,7 @@ function checkGitDist(dist: string, gitUrl: string, version = "master") {
             let line0 = lines[0];
             if (line0 && /(Updating|更新)[ ](.*)/.test(line0)) {//更新记录
                 let ver = RegExp.$2;
-                let logResult = git("log", dist, ver, "--oneline");
+                let logResult = git("log", dist, ver, `--format=%h %cn %s`);
                 if (logResult && logResult.stdout) {
                     changelog = logResult.stdout.toString();
                 }
@@ -273,7 +273,7 @@ function checkGitDist(dist: string, gitUrl: string, version = "master") {
     return changelog;
 }
 
-function walkDirs(dir: string, forEach: { (file: string, root: string, ) }, filter: { (file: string): boolean } = _file => true) {
+function walkDirs(dir: string, forEach: { (file: string, root: string,) }, filter: { (file: string): boolean } = _file => true) {
     let willChecked = [dir];
     while (willChecked.length) {
         let chk = willChecked.pop();
