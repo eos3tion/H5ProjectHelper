@@ -54,7 +54,7 @@ export function parseMap(cfgDir: string, mapPath: string, javaCfgPath?: string, 
     }
     const javaDatas = [];
     //存储文件
-    let temp = Buffer.alloc(1024 * 1024 * 10);
+    let temp = Buffer.alloc(1024 * 1024 * 100);
     let pos = 2;
     let len = 0;
     //预处理
