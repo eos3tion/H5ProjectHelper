@@ -297,6 +297,12 @@ interface BuildOption {
     pakApp?: boolean;
 
     /**
+     * 将原始的资源文件名，通过内容的md5值，进行改名
+     * 这类文件的根目录
+     */
+    md5ResDir?: string;
+
+    /**
      * 是否打包资源
      */
     pakRes?: boolean;

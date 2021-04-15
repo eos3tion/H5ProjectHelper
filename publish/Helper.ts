@@ -294,7 +294,7 @@ function walkDirs(dir: string, forEach: { (file: string, root: string,) }, filte
 
 
 function makeZip(src: string, dist: string, glob?: any) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         let output = fs.createWriteStream(dist);
         let archive = archiver('zip', {
             zlib: { level: 9 } // Sets the compression level.
@@ -411,7 +411,7 @@ function sshForRemote(cmd: string, ip: string, keyPath = "/data/ssh_keys/remote"
  * @param keyPath 
  */
 function scpForRemote(src: string, dest: string, ip: string, keyPath = "/data/ssh_keys/remote") {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         let client = new scp2.Client({
             port: 22,
             host: ip,

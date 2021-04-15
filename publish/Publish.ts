@@ -73,6 +73,22 @@ export class PublishBase {
     cfgPath = "";
 
     /**
+     * 将原始的资源文件名，通过内容的md5值，进行改名
+     * 这类文件的根目录
+     */
+    md5ResDir = "";
+    /**
+     * 将原始的资源文件名，通过内容的md5值，进行改名 的`数据文件`
+     * 形式如下  
+     * ```
+     * pvp/4.png        24/cdeae237dab886f1f93587ed0ea469.png
+     * pvp/3.png        31/3822929c59c583a247e5af35d45880.png
+     * pvp/2.png        9d/501faf821de98c31390a32eab2d1a5.png
+     * ```
+     */
+    resVerFileName = "resVer.txt";
+
+    /**
      * 发布时要拷贝的文件或文件夹
      */
     buildFiles = ["src", "scripts", "index.html", "libs", "egretProperties.json", "tsconfig.json", "typings", "template", "h5core", "tools.json", "wxgame_tsd"];
@@ -284,6 +300,8 @@ cfgs Object 附加配置,要替换的配置内容
 
             $.mergedFiles = $.mergedFiles || this.releaseMergedFiles;
 
+            $.md5ResDir ||= this.md5ResDir;
+
             $.inited = true;
         }
         return $;
@@ -313,7 +331,7 @@ cfgs Object 附加配置,要替换的配置内容
      * @param $ 
      */
     getWebDir($: BuildOption) {
-        return path.join($.baseDir, $.project, this.webDir);
+        return path.join($.baseDir, $.project, $.webDir);
     }
 
     /**
@@ -545,6 +563,11 @@ cfgs Object 附加配置,要替换的配置内容
                 }
             }
 
+
+            if ($.md5ResDir) {
+                await this.md5Res($);
+            }
+
             if ($.pakRes) {
                 await this.pakRes($);
                 if (scpRes && opSSHIp) {
@@ -684,7 +707,7 @@ cfgs Object 附加配置,要替换的配置内容
 
 
     makeZip(list: ResInfo[], dist: string, showLog?: boolean) {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             let output = fs.createWriteStream(dist);
             //打包
             let arch = archiver("zip", { zlib: { level: 9 } });
@@ -843,7 +866,7 @@ cfgs Object 附加配置,要替换的配置内容
             console.log(`${fullPath}流读取失败，${e.message}`);
             return;
         }
-        return new Promise((resolve, _) => {
+        return new Promise<void>((resolve, _) => {
             stream.on("end", () => {
                 md5 = md5util.digest("hex");
                 //检查是否已经有m2中的hash值
@@ -1146,7 +1169,7 @@ cfgs Object 附加配置,要替换的配置内容
         try {
             svn.ls(cfgSVNDist);
             exists = true;
-        } catch{ }
+        } catch { }
         if (exists) {
             console.log("已经存在", cfgSVNDist)
         } else {
@@ -1178,7 +1201,7 @@ cfgs Object 附加配置,要替换的配置内容
         console.log("try copy", masterRaw, versionRaw)
         fs.copySync(masterRaw, versionRaw);
 
-        
+
         let versionCfgRoot = this.getCfgPath($, lan, version, "", "");
         //对文件夹给与执行权限
         //chmod -R 777
@@ -1198,5 +1221,17 @@ cfgs Object 附加配置,要替换的配置内容
         // git("add", serverCfgGitRoot, ".");
         // git("commit", serverCfgGitRoot, "-m", `配置更新，version:${version}`);
         // git("push", serverCfgGitRoot, "origin");
+    }
+
+
+    async md5Res($: BuildOption) {
+        //1. 找到资源目录，将资源目录或者resVersionConfig.json 生成一个 原路径 和 md5后路径的数组
+        //2. 尝试生成md5名字的文件到指定目录
+        //3. 将生成的版本文件复制为--> resource/ver.txt
+        const { checkFileResource, copyResToFile } = await import("./ResMd5Solver");
+        const outPath = path.join($.dir_tmp, `res_${$.mainversion}.txt`);
+        let arr = await checkFileResource($.dir_res, outPath);
+        copyResToFile(arr, $.md5ResDir);
+        copyFileSync(outPath, path.join($.dir_tmp_publish, "resource", this.resVerFileName));
     }
 }
