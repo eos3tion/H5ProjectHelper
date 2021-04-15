@@ -5,10 +5,14 @@ import { walkDirs } from "./Helper";
 
 interface ResMd5Data {
     fullPath: string,
+    /**
+     * 形如
+     * 7c/0083aef2dc9d4f791705456fe52aeb.png
+     */
     md5File: string
 }
 
-export function solveResourceWithDict(inputDir: string, outputDir: string, dict: { [url: string]: ResInfo }, version: number) {
+export function solveResourceWithDict(inputDir: string, outputDir: string, dict: { [url: string]: ResInfo }, versionFile: string) {
     if (dict) {
         let resArr = [];
         if (dict) {
@@ -26,12 +30,12 @@ export function solveResourceWithDict(inputDir: string, outputDir: string, dict:
                 vo.md5File = md5TfName;
                 resArr.push(vo);
             }
-            writeFile(resArr, inputDir, outputDir, version);
+            writeFile(resArr, inputDir, versionFile);
             copyResToFile(resArr, outputDir);
         }
     }
 }
-export async function checkFileResource(inputDir: string, outputDir: string, version: number, resArr?: ResMd5Data[]) {
+export async function checkFileResource(inputDir: string, versionFile: string, resArr?: ResMd5Data[]) {
     if (!resArr) {
         resArr = [];
     }
@@ -41,8 +45,7 @@ export async function checkFileResource(inputDir: string, outputDir: string, ver
     }, file => !(fs.statSync(file).isDirectory() && paths.dirname(file) === ".svn"));
 
     await checkResPath(pathsArr, resArr);
-    copyResToFile(resArr, outputDir);
-    writeFile(resArr, inputDir, outputDir, version);
+    writeFile(resArr, inputDir, versionFile);
     return resArr;
 }
 
@@ -64,7 +67,7 @@ function solveSinFile(pathStr: string, resArr: ResMd5Data[]) {
         console.log(`${slovedPath}流读取失败，${e.message}`);
         return;
     }
-    return new Promise((resolve, _) => {
+    return new Promise<void>((resolve) => {
         stream.on("end", () => {
             md5 = md5util.digest("hex");
             let extname = paths.extname(pathStr);
@@ -94,7 +97,7 @@ function doFileHandle(pathStr: string, md5File: string, filePath: string) {
     return str1;
 }
 
-function writeFile(resArr: ResMd5Data[], inputDir: string, outputDir: string, version: number) {
+function writeFile(resArr: ResMd5Data[], inputDir: string, versionFile: string) {
     if (resArr && resArr.length > 0) {
         let writeStr = "";
         for (let i = 0; i < resArr.length; i++) {
@@ -104,48 +107,29 @@ function writeFile(resArr: ResMd5Data[], inputDir: string, outputDir: string, ve
                 writeStr += doFileHandle(fullPath, md5File, inputDir)
             }
         }
-        var versionTxtName = version + ".txt";
-        var outtxt = paths.join(outputDir, versionTxtName);
-        fs.writeFile(outtxt, writeStr, function (err) {
-            if (err) {
-                return console.error(err);
-            }
-            console.log(`写入完成！`)
-        });
+        fs.writeFileSync(versionFile, writeStr);
+        console.log(`写入[${versionFile}]完成！`)
     }
 }
 
-async function copyResToFile(resArr: ResMd5Data[], outputDir: string) {
+export function copyResToFile(resArr: ResMd5Data[], outputDir: string) {
     if (resArr) {
-        while (resArr.length > 0) {
-            let info = resArr.pop();
-            await copyRes(outputDir, info)
+        for (let i = 0; i < resArr.length; i++) {
+            const info = resArr[i];
+            copyRes(outputDir, info);
         }
     }
 }
 
-async function copyRes(outputDir: string, info: ResMd5Data) {
+function copyRes(outputDir: string, info: ResMd5Data) {
     if (info) {
         let { fullPath, md5File } = info;
         if (fs.existsSync(fullPath)) {
-            let fliename = paths.join(outputDir, md5File.substring(0, 2));
-            let dirPath = paths.join(outputDir, md5File);
-            if (!fs.existsSync(fliename)) {
-                fs.mkdir(fliename, { recursive: true }, (err) => {
-                    if (err) {
-                        throw err;
-                    } else {
-                        if (!fs.existsSync(dirPath)) {
-                            fs.copyFileSync(fullPath, dirPath);
-                            console.log("拷贝" + fullPath + "成功！");
-                        }
-                    }
-                });
-            } else {
-                if (!fs.existsSync(dirPath)) {
-                    fs.copyFileSync(fullPath, dirPath);
-                    console.log("拷贝" + fullPath + "成功！");
-                }
+            let dirPath = paths.join(outputDir, md5File.substring(0, 2));
+            let fliename = paths.join(outputDir, md5File);
+            fs.mkdirsSync(dirPath);
+            if (!fs.existsSync(dirPath)) {
+                fs.copyFileSync(fullPath, fliename);
             }
         }
     }
