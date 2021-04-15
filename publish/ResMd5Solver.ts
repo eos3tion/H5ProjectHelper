@@ -42,7 +42,7 @@ export async function checkFileResource(inputDir: string, versionFile: string, r
     var pathsArr: string[] = [];
     walkDirs(inputDir, file => {
         pathsArr.push(file);
-    }, file => !(fs.statSync(file).isDirectory() && paths.dirname(file) === ".svn"));
+    }, file => !(fs.statSync(file).isDirectory() && paths.basename(file) === ".svn"));
 
     await checkResPath(pathsArr, resArr);
     writeFile(resArr, inputDir, versionFile);
