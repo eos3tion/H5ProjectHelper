@@ -1,6 +1,7 @@
 import * as fs from "fs-extra";
 import * as paths from "path";
 import * as crypto from "crypto";
+import { walkDirs } from "./Helper";
 
 interface ResMd5Data {
     fullPath: string,
@@ -35,23 +36,10 @@ export async function checkFileResource(inputDir: string, outputDir: string, ver
         resArr = [];
     }
     var pathsArr: string[] = [];
-    let willChecked = [inputDir];
-    while (willChecked.length) {
-        let chk = willChecked.pop();
-        let stat = fs.statSync(chk);
-        if (stat.isDirectory()) {
-            if (paths.extname(chk) == ".svn") {
-                continue;
-            }
-            let files = fs.readdirSync(chk);
-            files.forEach(file => {
-                willChecked.push(paths.join(chk, file));
-            });
-        }
-        else {
-            pathsArr.push(chk);
-        }
-    }
+    walkDirs(inputDir, file => {
+        pathsArr.push(file);
+    }, file => !(fs.statSync(file).isDirectory() && paths.dirname(file) === ".svn"));
+
     await checkResPath(pathsArr, resArr);
     copyResToFile(resArr, outputDir);
     writeFile(resArr, inputDir, outputDir, version);
