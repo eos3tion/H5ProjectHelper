@@ -132,7 +132,7 @@ function copyRes(outputDir: string, info: ResMd5Data) {
             let dirPath = paths.join(outputDir, md5File.substring(0, 2));
             let fliename = paths.join(outputDir, md5File);
             fs.mkdirsSync(dirPath);
-            if (!fs.existsSync(dirPath)) {
+            if (!fs.existsSync(fliename)) {
                 fs.copyFileSync(fullPath, fliename);
             }
         }
