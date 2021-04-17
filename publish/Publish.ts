@@ -565,7 +565,7 @@ cfgs Object 附加配置,要替换的配置内容
 
 
             if ($.md5ResDir) {
-                await this.md5Res($);
+                await this.md5Res($, webFolder);
             }
 
             if ($.pakRes) {
@@ -1224,7 +1224,7 @@ cfgs Object 附加配置,要替换的配置内容
     }
 
 
-    async md5Res($: BuildOption) {
+    async md5Res($: BuildOption, webFolder: string) {
         //1. 找到资源目录，将资源目录或者resVersionConfig.json 生成一个 原路径 和 md5后路径的数组
         //2. 尝试生成md5名字的文件到指定目录
         //3. 将生成的版本文件复制为--> resource/ver.txt
@@ -1233,7 +1233,7 @@ cfgs Object 附加配置,要替换的配置内容
         console.log(`开始检查资源文件[${$.dir_res}]中所有文件的hash值`)
         let arr = await checkFileResource($.dir_res, outPath);
         copyResToFile(arr, $.md5ResDir);
-        copyFileSync(outPath, path.join($.dir_tmp_publish, "resource", this.resVerFileName));
+        copyFileSync(outPath, path.join(webFolder, this.resVerFileName));
         console.log(`完成资源文件的检查和拷贝`);
     }
 }
