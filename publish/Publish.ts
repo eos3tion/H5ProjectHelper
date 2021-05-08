@@ -582,7 +582,7 @@ cfgs Object 附加配置,要替换的配置内容
             }
         }
         console.log("处理完成");
-        const log = `发布${isRelease ? `正式版` : `nightly版`}${mainversion}${changelog ? `，变更内容：\n${changelog}` : ``}`
+        const log = `发布项目[${this.project}]${isRelease ? `正式版` : `nightly版`}${mainversion}${changelog ? `，变更内容：\n${changelog}` : ``}`
         let dingding = $.webhook;
         if (dingding) {
             dingding.msg = log;
