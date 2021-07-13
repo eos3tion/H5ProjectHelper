@@ -217,6 +217,12 @@ interface BuildOption {
     git_branch?: string;
 
     /**
+     * git的release版本文件路径  
+     * 如果配置了此文件，发布release版时，会尝试到指定地址加载文件
+     */
+    git_branchRCFile?: string;
+
+    /**
      * 用于文件编译的目录
      */
     dir_tmp_publish?: string;

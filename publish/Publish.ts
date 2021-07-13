@@ -99,6 +99,11 @@ export class PublishBase {
     gameCfgOutput = "resource/game.json";
 
     releaseMergedFiles = ["libs/modules/egret/egret.min.js", "libs/modules/egret/egret.web.min.js", "../../../h5core/bin/h5core/h5core.min.js", "main.min.js"];
+    /**
+     * git的release版本文件路径  
+     * 如果配置了此文件，发布release版时，会尝试到指定地址加载文件
+     */
+    git_branchRCFile: string;
 
     funcs: { [index: string]: { func?(...args); desc: string } } = {
         buildApp: {
@@ -192,115 +197,117 @@ cfgs Object 附加配置,要替换的配置内容
         }
 
         if (!$.inited) {
-            $.webDir = $.webDir || this.webDir;
+            $.webDir ||= this.webDir;
             //当前路径
-            $.jsDir = $.jsDir || __dirname;
+            $.jsDir ||= __dirname;
 
             //基础路径
-            $.baseDir = $.baseDir || this.baseDir;//0.5的基础路径
+            $.baseDir ||= this.baseDir;//0.5的基础路径
 
             //项目名称
-            $.project = $.project || this.project;
+            $.project ||= this.project;
             //语言 可外部设置
-            $.lan = $.lan || this.defaultLan;
+            $.lan ||= this.defaultLan;
             //用于切换分支 可外部设置
-            $.buildVersion = $.buildVersion || "nor";
+            $.buildVersion ||= "nor";
 
             //创建时间用于创建版本号和zip目录名称
-            $.buildTime = $.buildTime || new Date().format("yyyyMMdd_HHmmss");
+            $.buildTime ||= new Date().format("yyyyMMdd_HHmmss");
 
             //主版本号
-            $.mainversion = $.mainversion || $.lan + "." + $.buildVersion + "." + $.buildTime;
+            $.mainversion ||= $.lan + "." + $.buildVersion + "." + $.buildTime;
 
             //原始语言版(一般为中文版)的路径
-            $.dir_defConfig = $.dir_defConfig || this.getCfgPath($, this.defaultLan, $.version);
+            $.dir_defConfig ||= this.getCfgPath($, this.defaultLan, $.version);
 
-            $.dir_rawConfig = $.dir_rawConfig || this.getCfgPath($, $.lan, $.version, "raw")
+            $.dir_rawConfig ||= this.getCfgPath($, $.lan, $.version, "raw")
 
             //发布版配置路径
-            $.dir_pubConfig = $.dir_pubConfig || ($.lan == this.defaultLan ? $.dir_defConfig/*原始语言使用原始配置路径*/ : this.getCfgPath($, $.lan));
+            $.dir_pubConfig ||= ($.lan == this.defaultLan ? $.dir_defConfig/*原始语言使用原始配置路径*/ : this.getCfgPath($, $.lan));
 
             //配置的原始路径
-            $.dir_srcConfig = $.dir_srcConfig || this.getCfgPath($, $.lan, $.version);
+            $.dir_srcConfig ||= this.getCfgPath($, $.lan, $.version);
 
-            $.svn_project_trunk = $.svn_project_trunk || this.svn_project_trunk || `${this.svnPath}/${$.project}/trunk`;
+            $.svn_project_trunk ||= this.svn_project_trunk || `${this.svnPath}/${$.project}/trunk`;
 
-            $.svn_res = $.svn_res || `${$.svn_project_trunk}/res/${$.lan}`;
+            $.svn_res ||= `${$.svn_project_trunk}/res/${$.lan}`;
 
-            $.dir_resRaw = $.dir_resRaw || this.getResPath($, this.defaultLan);
+            $.dir_resRaw ||= this.getResPath($, this.defaultLan);
 
-            $.dir_res = $.dir_res || this.getResPath($, $.lan);
+            $.dir_res ||= this.getResPath($, $.lan);
 
-            $.git_path = $.git_path || this.gitPath;
+            $.git_path ||= this.gitPath;
 
             //设置临时文件夹路径
-            $.dir_tmp = $.dir_tmp || path.join($.baseDir, $.project, "temp", $.lan, $.buildVersion);
+            $.dir_tmp ||= path.join($.baseDir, $.project, "temp", $.lan, $.buildVersion);
 
             //设置发布目录
-            $.dir_tmp_publish = $.dir_tmp_publish || path.join($.dir_tmp, "publish");
+            $.dir_tmp_publish ||= path.join($.dir_tmp, "publish");
 
-            $.resCfgPath = $.resCfgPath || path.join($.dir_tmp, "resCfg");
+            $.resCfgPath ||= path.join($.dir_tmp, "resCfg");
 
             //调试版路径
-            $.dir_tmp_nightly = $.dir_tmp_nightly || path.join($.dir_tmp, "nightly");
+            $.dir_tmp_nightly ||= path.join($.dir_tmp, "nightly");
 
-            $.resVersionFile = $.resVersionFile || path.join($.dir_tmp, "resVersion.json");
+            $.resVersionFile ||= path.join($.dir_tmp, "resVersion.json");
 
-            $.dir_mapRaw = $.dir_mapRaw || "m";
+            $.dir_mapRaw ||= "m";
 
-            $.dir_mapRelease = $.dir_mapRelease || "m2";
+            $.dir_mapRelease ||= "m2";
 
-            $.egretVersion = $.egretVersion || this.egretVersion;
+            $.egretVersion ||= this.egretVersion;
 
-            $.git_user = $.git_user || this.gitUser;
+            $.git_user ||= this.gitUser;
 
-            $.git_pwd = $.git_pwd || this.gitPwd;
+            $.git_pwd ||= this.gitPwd;
 
-            $.cfgFileName = $.cfgFileName || this.cfgFileName;
+            $.cfgFileName ||= this.cfgFileName;
 
-            $.cfgPath = $.cfgPath || this.cfgPath || path.join($.dir_srcConfig, $.cfgFileName);
+            $.cfgPath ||= this.cfgPath || path.join($.dir_srcConfig, $.cfgFileName);
 
-            $.dir_tmp_source = $.dir_tmp_source || path.join($.dir_tmp, "source");
+            $.dir_tmp_source ||= path.join($.dir_tmp, "source");
 
-            $.buildFiles = $.buildFiles || this.buildFiles;
+            $.buildFiles ||= this.buildFiles;
 
-            $.dir_before_coverd = $.dir_before_coverd || path.join($.dir_tmp_source, "client", "rc", "before_coverd");
+            $.dir_before_coverd ||= path.join($.dir_tmp_source, "client", "rc", "before_coverd");
 
-            $.dir_after_coverd = $.dir_after_coverd || path.join($.dir_tmp_source, "client", "rc", "after_coverd");
+            $.dir_after_coverd ||= path.join($.dir_tmp_source, "client", "rc", "after_coverd");
 
-            $.yunweiLan = $.yunweiLan || "";
+            $.yunweiLan ||= "";
 
-            $.yunweiProject = $.yunweiProject || $.project;
+            $.yunweiProject ||= $.project;
 
-            $.yunweiPath = $.yunweiPath || `//192.168.0.202/${$.yunweiProject}_version/online/client/${$.yunweiProject}`;
+            $.yunweiPath ||= `//192.168.0.202/${$.yunweiProject}_version/online/client/${$.yunweiProject}`;
 
-            $.get_res_md5 = $.get_res_md5 || "source /etc/profile;bash /data/script/get_client_md5.sh {yunweiLan}{yunweiProject} res".substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject });
+            $.get_res_md5 ||= "source /etc/profile;bash /data/script/get_client_md5.sh {yunweiLan}{yunweiProject} res".substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject });
 
             //运维上传到测服的指令
-            $.yunweiCmd = $.yunweiCmd || "source /etc/profile;bash /data/script/version_update/{yunweiLan}{yunweiProject}_update.sh {cmd} {yunweiLan}{yunweiProject}";
+            $.yunweiCmd ||= "source /etc/profile;bash /data/script/version_update/{yunweiLan}{yunweiProject}_update.sh {cmd} {yunweiLan}{yunweiProject}";
 
             //上传程序
-            $.upload_app = $.upload_app || $.yunweiCmd.substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject, cmd: "web" });
+            $.upload_app ||= $.yunweiCmd.substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject, cmd: "web" });
 
             //上传资源
-            $.upload_res = $.upload_res || $.yunweiCmd.substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject, cmd: "res" });
+            $.upload_res ||= $.yunweiCmd.substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject, cmd: "res" });
 
             //游戏配置文件的路径
-            $.gameCfgPath = $.gameCfgPath || this.gameCfgOutput;
+            $.gameCfgPath ||= this.gameCfgOutput;
 
-            $.uglifyOptions = $.uglifyOptions || { compress: true };
+            $.uglifyOptions ||= { compress: true };
 
             //调整代理
-            $.wsProxy = $.wsProxy || "";
+            $.wsProxy ||= "";
 
             //页面标题
-            $.title = $.title || "";
+            $.title ||= "";
 
-            $.zmGateUrl = $.zmGateUrl || "";
+            $.zmGateUrl ||= "";
 
-            $.mergedFiles = $.mergedFiles || this.releaseMergedFiles;
+            $.mergedFiles ||= this.releaseMergedFiles;
 
             $.md5ResDir ||= this.md5ResDir;
+
+            $.git_branchRCFile ||= this.git_branchRCFile;
 
             $.inited = true;
         }
@@ -379,10 +386,15 @@ cfgs Object 附加配置,要替换的配置内容
 
 
     async buildApp($: BuildOption = {}) {
-        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath, scpApp, scpRes, opSSHIp, wsProxy, zmGateUrl, title } = this.initOpt($);
+        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, git_branchRCFile, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath, scpApp, scpRes, opSSHIp, wsProxy, zmGateUrl, title } = this.initOpt($);
         let result = /^(http[s]?):\/\/(.*?)$/.exec(git_path);
         if (result) {
             git_path = `${result[1]}://${git_user}:${git_pwd}@${result[2]}`;
+        }
+        if (git_branchRCFile) {
+            if (fs.existsSync(git_branchRCFile)) {
+                git_branch = fs.readFileSync(git_branchRCFile, "utf8");
+            }
         }
 
         let changelog = checkGitDist(dir_tmp_source, git_path, git_branch);
@@ -1144,7 +1156,7 @@ cfgs Object 附加配置,要替换的配置内容
         "origin":"//h5.tpulse.cn/{project}/cfgs/{lan}/cfgs.json",
         "version":"{version}/",
         "endAction":"http://action.build.h5.tpulse.cn//data/projects/{project}/pakData.js?{version}"
-    }` } = this.initOpt($);
+    }`, git_branchRCFile } = this.initOpt($);
 
         if (!version) {
             version = `V${buildTime}`;
@@ -1157,13 +1169,22 @@ cfgs Object 附加配置,要替换的配置内容
         }
         checkGitDist(dir_tmp_source, git_path, "master");
         //基于master创建 `version` 版本的 tag，并提交
-        git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
+        // git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
+        git("push", dir_tmp_source, "origin", `master:${version}`);
+
+        if (git_branchRCFile) {
+            try {
+                fs.writeFileSync(git_branchRCFile, version);
+            } catch {
+                console.log(`将版本号[${version}]写入到[${git_branchRCFile}]失败，请手动处理`);
+            }
+        }
 
         //创建配置svn版本分支
         const svnCommitMSG = `"创建分支：${version}"`;
         const svnPath = this.svnPath;
         let cfgSVNSource = `${svnPath}/${project}/trunk/cfgs/${lan}/`;
-        let cfgSVNDist = `${svnPath}/${project}/branch/${version}`
+        let cfgSVNDist = `${svnPath}/${project}/branch/${version}`;
         //检查svn分支是否已经存在
         let exists = false;
         try {
@@ -1191,6 +1212,21 @@ cfgs Object 附加配置,要替换的配置内容
             svn.import(cfgPath, svnGlobalCfgPath, svnCommitMSG);
         }
 
+        //创建ui分支
+        let uiSVNSource = `${svnPath}/${project}/trunk/ui/${lan}/`;
+        let uiSVNDist = `${svnPath}/${project}/branch/${version}_ui`;
+        //检查svn分支是否已经存在
+        exists = false;
+        try {
+            svn.ls(uiSVNDist);
+            exists = true;
+        } catch { }
+        if (exists) {
+            console.log("已经存在", uiSVNDist)
+        } else {
+            svn.cp(uiSVNSource, uiSVNDist, svnCommitMSG);
+        }
+
         //将已经提交的配置，创建副本
         let masterCfgOutput = this.getCfgPath($, lan, "", "output", "");
         let masterRaw = this.getCfgPath($, lan, "", "raw", "");
@@ -1200,7 +1236,6 @@ cfgs Object 附加配置,要替换的配置内容
         fs.copySync(masterCfgOutput, versionCfgOutput);
         console.log("try copy", masterRaw, versionRaw)
         fs.copySync(masterRaw, versionRaw);
-
 
         let versionCfgRoot = this.getCfgPath($, lan, version, "", "");
         //对文件夹给与执行权限
