@@ -288,23 +288,6 @@ cfgs Object 附加配置,要替换的配置内容
 
             $.dir_after_coverd ||= path.join($.dir_tmp_source, "client", "rc", "after_coverd");
 
-            $.yunweiLan ||= "";
-
-            $.yunweiProject ||= $.project;
-
-            $.yunweiPath ||= `//192.168.0.202/${$.yunweiProject}_version/online/client/${$.yunweiProject}`;
-
-            $.get_res_md5 ||= "source /etc/profile;bash /data/script/get_client_md5.sh {yunweiLan}{yunweiProject} res".substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject });
-
-            //运维上传到测服的指令
-            $.yunweiCmd ||= "source /etc/profile;bash /data/script/version_update/{yunweiLan}{yunweiProject}_update.sh {cmd} {yunweiLan}{yunweiProject}";
-
-            //上传程序
-            $.upload_app ||= $.yunweiCmd.substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject, cmd: "web" });
-
-            //上传资源
-            $.upload_res ||= $.yunweiCmd.substitute({ yunweiLan: $.yunweiLan, yunweiProject: $.yunweiProject, cmd: "res" });
-
             //游戏配置文件的路径
             $.gameCfgPath ||= this.gameCfgOutput;
 
@@ -577,15 +560,19 @@ cfgs Object 附加配置,要替换的配置内容
                 fs.writeFileSync(file, cnt, "utf8");
             });
             if (pakApp) {
-                await this.pakApp(webFolder, $, { ignore: ["main.min.js", 'libs/**', 'h5core/**'] });
-                if (scpApp && opSSHIp) {
-                    await this.scp({ path: path.join(scpApp, this.getZipName($, "web")), host: opSSHIp, file: $.zipPathApp });
+                if ($.yunweiPath) {
+                    await this.pakApp(webFolder, $, { ignore: ["main.min.js", 'libs/**', 'h5core/**'] });
+                    if (scpApp && opSSHIp) {
+                        await this.scp({ path: path.join(scpApp, this.getZipName($, "web")), host: opSSHIp, file: $.zipPathApp });
+                    }
                 }
-                //执行运维脚本
-                let data = await doSSH($.upload_app, $);
-                console.log(data.output);
-                if (data.code) {
-                    console.log("执行失败");
+                if ($.upload_app) {
+                    //执行运维脚本
+                    let data = await doSSH($.upload_app, $);
+                    console.log(data.output);
+                    if (data.code) {
+                        console.log("执行失败");
+                    }
                 }
             }
 
@@ -595,15 +582,19 @@ cfgs Object 附加配置,要替换的配置内容
             }
 
             if ($.pakRes) {
-                await this.pakRes($);
-                if (scpRes && opSSHIp) {
-                    await this.scp({ path: path.join(scpRes, this.getZipName($, "res")), host: opSSHIp, file: $.zipPathRes });
+                if ($.yunweiPath) {
+                    await this.pakRes($);
+                    if (scpRes && opSSHIp) {
+                        await this.scp({ path: path.join(scpRes, this.getZipName($, "res")), host: opSSHIp, file: $.zipPathRes });
+                    }
                 }
-                //执行运维脚本
-                let data = await doSSH($.upload_res, $);
-                console.log(data.output);
-                if (data.code) {
-                    console.log("执行失败");
+                if ($.upload_res) {
+                    //执行运维脚本
+                    let data = await doSSH($.upload_res, $);
+                    console.log(data.output);
+                    if (data.code) {
+                        console.log("执行失败");
+                    }
                 }
             }
         }
