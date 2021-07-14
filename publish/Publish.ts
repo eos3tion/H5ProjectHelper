@@ -1,4 +1,4 @@
-import { egret, sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, webhookNotifer, scpForRemote, git } from "./Helper";
+import { egret, sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, webhookNotifer, scpForRemote, git, postDataUseJSON } from "./Helper";
 import * as fs from "fs-extra";
 import * as path from "path";
 import { Buffer } from "buffer";
@@ -214,8 +214,23 @@ cfgs Object 附加配置,要替换的配置内容
             //创建时间用于创建版本号和zip目录名称
             $.buildTime ||= new Date().format("yyyyMMdd_HHmmss");
 
+            $.git_branchRCFile ||= this.git_branchRCFile;
+
+            let git_branchRCFile = $.git_branchRCFile;
+            let RCVer = "";
+            if ($.isRelease && git_branchRCFile) {
+                if (fs.existsSync(git_branchRCFile)) {
+                    let ver = fs.readFileSync(git_branchRCFile, "utf8").trim();
+                    if (ver) {
+                        RCVer = `${ver}.`
+                        $.version ||= ver;
+                    }
+                }
+            }
+
             //主版本号
-            $.mainversion ||= $.lan + "." + $.buildVersion + "." + $.buildTime;
+            $.mainversion ||= $.lan + "." + $.buildVersion + "." + RCVer + $.buildTime;
+
 
             //原始语言版(一般为中文版)的路径
             $.dir_defConfig ||= this.getCfgPath($, this.defaultLan, $.version);
@@ -307,7 +322,6 @@ cfgs Object 附加配置,要替换的配置内容
 
             $.md5ResDir ||= this.md5ResDir;
 
-            $.git_branchRCFile ||= this.git_branchRCFile;
 
             $.inited = true;
         }
@@ -386,14 +400,14 @@ cfgs Object 附加配置,要替换的配置内容
 
 
     async buildApp($: BuildOption = {}) {
-        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, git_branchRCFile, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath, scpApp, scpRes, opSSHIp, wsProxy, zmGateUrl, title } = this.initOpt($);
+        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, version, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath, scpApp, scpRes, opSSHIp, wsProxy, zmGateUrl, title } = this.initOpt($);
         let result = /^(http[s]?):\/\/(.*?)$/.exec(git_path);
         if (result) {
             git_path = `${result[1]}://${git_user}:${git_pwd}@${result[2]}`;
         }
-        if (git_branchRCFile) {
-            if (fs.existsSync(git_branchRCFile)) {
-                git_branch = fs.readFileSync(git_branchRCFile, "utf8");
+        if (isRelease) {
+            if (version) {
+                git_branch = version;
             }
         }
 
@@ -593,6 +607,18 @@ cfgs Object 附加配置,要替换的配置内容
                 }
             }
         }
+
+        const endAction = $.buildEndAction;
+        if (endAction) {
+            try {
+                await postDataUseJSON(endAction, $);
+            } catch (e) {
+                console.error(e.message);
+            }
+        }
+
+        this.onBuildEnd($);
+
         console.log("处理完成");
         const log = `发布项目[${this.project}]${isRelease ? `正式版` : `nightly版`}${mainversion}${changelog ? `，变更内容：\n${changelog}` : ``}`
         let dingding = $.webhook;
@@ -601,6 +627,10 @@ cfgs Object 附加配置,要替换的配置内容
         }
         console.log(log);
         return $;
+    }
+
+    protected onBuildEnd(_: BuildOption) {
+
     }
 
     getJsName($: BuildOption) {
@@ -1272,3 +1302,6 @@ cfgs Object 附加配置,要替换的配置内容
         console.log(`完成资源文件的检查和拷贝`);
     }
 }
+
+export * as fs from "fs-extra";
+export * as Helper from "./Helper";

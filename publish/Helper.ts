@@ -9,6 +9,7 @@ import * as crypto from "crypto";
 import * as cwebp from "cwebp-bin";
 import { Buffer } from "buffer";
 import * as https from "https";
+import * as http from "http";
 import * as scp2 from "scp2";
 
 
@@ -437,21 +438,45 @@ function webhookNotifer(opt: { msg: string, url: string }) {
     if (!opt.msg) {
         return;
     }
-    const postData = JSON.stringify({
+    postDataUseJSON(opt.url, {
         msgtype: "text",
         text: {
             content: opt.msg
         }
     })
-    let req = https.request(opt.url, {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(postData)
-        }
+}
+
+function postDataUseJSON(url: string, data: any, isHttps?: boolean) {
+    return new Promise((resolve, reject) => {
+        const buffers = [] as Buffer[];
+        const postData = JSON.stringify(data);
+        let req = (isHttps ? https : http).request(url, {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        }, res => {
+            res.on("data", function (buf) {
+                buffers.push(buf);
+            })
+            res.on("end", function () {
+                let resp = Buffer.concat(buffers).toString("utf8");
+                let data;
+                try {
+                    data = JSON.parse(resp)
+                } catch (e) {
+                    return reject(e);
+                }
+                resolve(data);
+            })
+            res.on("error", function (e) {
+                reject(e);
+            })
+        })
+        req.write(postData);
+        req.end();
     })
-    req.write(postData);
-    req.end();
 }
 
 function copy(src: string, dest: string, showLog?: boolean, opt?: fs.CopyOptionsSync) {
@@ -483,5 +508,6 @@ export {
     sshForRemote,
     egret,
     webhookNotifer,
-    scpForRemote
+    scpForRemote,
+    postDataUseJSON
 }

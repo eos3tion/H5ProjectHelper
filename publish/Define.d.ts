@@ -429,6 +429,12 @@ interface BuildOption {
      * ```
      */
     globalCfgTemplate?: string;
+
+    /**
+     * 编译结束后，发送的请求  
+     * 会将 InitOption 使用JSON序列化发送给指定的地址
+     */
+    buildEndAction?: string;
 }
 
 /**
