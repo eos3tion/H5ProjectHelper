@@ -443,7 +443,7 @@ function webhookNotifer(opt: { msg: string, url: string }) {
         text: {
             content: opt.msg
         }
-    })
+    }, true)
 }
 
 function postDataUseJSON(url: string, data: any, isHttps?: boolean) {
@@ -501,6 +501,7 @@ export {
     copyFileSync,
     makeZip,
     executeCmd,
+    exec,
     getMD5,
     svn,
     webp,
