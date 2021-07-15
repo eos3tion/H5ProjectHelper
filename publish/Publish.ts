@@ -607,7 +607,7 @@ cfgs Object 附加配置,要替换的配置内容
                 console.error(e.message);
             }
         }
-        
+
         const log = `发布项目[${this.project}]${isRelease ? `正式版` : `nightly版`}${mainversion}${changelog ? `，变更内容：\n${changelog}` : ``}`
         let dingding = $.webhook;
         if (dingding) {
@@ -1265,6 +1265,13 @@ cfgs Object 附加配置,要替换的配置内容
         } catch (e) {
             console.log(e);
         }
+
+        let log = `分支[${version}]创建完成：\n配置分支路径：[${cfgSVNDist}]\nUI分支路径：[${uiSVNDist}]`;
+        let dingding = $.webhook;
+        if (dingding) {
+            dingding.msg = log;
+        }
+        console.log(log);
 
         // //将文件提交到git
         // let serverCfgGitRoot = this.serverCfgPath;
