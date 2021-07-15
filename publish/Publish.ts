@@ -1283,6 +1283,7 @@ cfgs Object 附加配置,要替换的配置内容
         // git("add", serverCfgGitRoot, ".");
         // git("commit", serverCfgGitRoot, "-m", `配置更新，version:${version}`);
         // git("push", serverCfgGitRoot, "origin");
+        return $;
     }
 
 
