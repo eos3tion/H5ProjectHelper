@@ -27,6 +27,10 @@
 	<script type="text/javascript">
 		var projectName = "@name@";
 		var yunweiProject = "@name@";
+		var webhook = {
+			msg: projectName + "发布了新的版本",
+			url: ""//填写webhook的地址
+		}
 		document.title = projectName + " 项目发布";
 		var remotePath = "/data/ftp/company_202/";
 		var settings = {
@@ -35,38 +39,11 @@
 				yunweiKey: yunweiProject,
 				remoteKey: "online",
 				options: {
-					title: "血饮龙纹",
-					wsProxy: "xylw.961u.com",
-					opSSHIp: "120.92.155.245",
-					get_res_md5: "cd /data/www/res/ && find -type f -exec md5sum {} \\; && echo -n 'xuke success' || echo -n 'xuke fail'",
-					upload_app: "sh /data/script/update/qianduan_update",
-					upload_res: "sh /data/script/update/qianduan_update",
-					yunweiPath: "//192.168.0.202/xxh5_version/online/",
-					scpApp: remotePath + "web/",
-					scpRes: remotePath + "res/",
-					wsProxy: "xylw.961u.com"
+					title: "@name@",
+					webhook: webhook,
+					useRaws:[]
 				},
-				htmls: ["zhangmeng.html", "1sdk.html"],
-				hasNightly: true
-			},
-			cnhy: {
-				name: "hysdk-bt版",
-				lan: "cn",
-				yunweiKey: "xxbt",
-				options: {
-					cfgVer: "hy",
-					buildVersion: "bt",
-					gameCfgPath: "resource/game_hy.json",
-					opSSHIp: "120.92.153.139",
-					get_res_md5: "cd /data/www/res/ && find -type f -exec md5sum {} \\; && echo -n 'xuke success' || echo -n 'xuke fail'",
-					upload_app: "sh /data/script/update/qianduan_update",
-					upload_res: "sh /data/script/update/qianduan_update",
-					yunweiPath: "//192.168.0.202/xxh5_version/hysdk/",
-					resVersionFile: "F:/temp/xx/cn/nor/resVersion.json",
-					scpApp: remotePath + "web/",
-					scpRes: remotePath + "res/",
-					wsProxy: "xxbt.961u.com"
-				},
+				useJsonLang: "/data/projects/"+projectName+"/www/cfgs/cn/lang.json",
 				htmls: ["zhangmeng.html", "1sdk.html"],
 				hasNightly: true
 			}
@@ -116,6 +93,13 @@
 			connectAndDo(projectName, 'updateRes', [{ project: projectName, showFileSolveLog: true }]);
 		}
 
+		function createBranch() {
+			var RCVer = $g("RCVer").value.trim();
+			if (!RCVer) {
+				return alert("请填写版本号");
+			}
+			connectAndDo(projectName, "createBranch", [{ project: projectName, version: RCVer, webhook: webhook }])
+		}
 
 	</script>
 </head>
@@ -132,6 +116,8 @@
 			<div><input type="button" value="发布微信小游戏版本" onclick="buildWXGame()" /> </div>
 			<div>▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇其他操作▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇</div>
 			<div><input type="button" value="更新res资源" onclick="updateRes()" /> </div><br />
+			<div>▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇创建正式版分支▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇</div>
+			<div>版本号：<input id="RCVer" type="text" size="50" /> <input type="button" value="创建" onclick="createBranch()" /> </div><br />
 			<div id="static">
 				<input type="button" value="清除日志" onclick="clearLog()" />
 			</div>
