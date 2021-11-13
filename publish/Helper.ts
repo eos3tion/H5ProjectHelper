@@ -386,13 +386,6 @@ function getMD5(data: string | Buffer) {
     return crypto.createHash('md5').update(data).digest('hex');
 }
 
-/**
- * 执行212的指令
- * @param cmd 
- */
-function sshForLocal(cmd: string, ip = "192.168.0.202", keyPath = "/data/ssh_keys/local", username = "root", hideData?: boolean) {
-    return ssh(cmd, { host: ip, privateKey: require('fs').readFileSync(keyPath), username, port: 22 }, hideData);
-}
 
 /**
  * 执行远程运维机指令
@@ -400,8 +393,9 @@ function sshForLocal(cmd: string, ip = "192.168.0.202", keyPath = "/data/ssh_key
  * @param ip 
  * @param keyPath 
  */
-function sshForRemote(cmd: string, ip: string, keyPath = "/data/ssh_keys/remote", username = "root", hideData?: boolean) {
-    return ssh(cmd, { host: ip, privateKey: require('fs').readFileSync(keyPath), username, port: 22 }, hideData);
+function sshForRemote(cmd: string, param: SSHDefine, hideData?: boolean) {
+    const { host, port = 22, username = "root", keyPath, password } = param;
+    return ssh(cmd, { host, privateKey: require('fs').readFileSync(keyPath), username, port, password }, hideData);
 }
 
 /**
@@ -411,21 +405,24 @@ function sshForRemote(cmd: string, ip: string, keyPath = "/data/ssh_keys/remote"
  * @param ip 
  * @param keyPath 
  */
-function scpForRemote(src: string, dest: string, ip: string, keyPath = "/data/ssh_keys/remote") {
+function scpForRemote(param: ScpDefine) {
+
+    const { host, port = 22, username = "root", keyPath, password, file, path } = param;
     return new Promise<void>((resolve, reject) => {
         let client = new scp2.Client({
-            port: 22,
-            host: ip,
-            username: "root",
+            port,
+            host,
+            username,
+            password,
             privateKey: require('fs').readFileSync(keyPath)
         })
-        console.log(`开始将文件${src}上传至服务器[${ip}]${dest}`)
-        client.upload(src, dest, err => {
+        console.log(`开始将文件${file}上传至服务器[${host}]${path}`)
+        client.upload(file, path, err => {
             if (err) {
                 reject(err);
             } else {
                 resolve();
-                console.log(`上传完毕，文件${src}上传至服务器[${ip}]${dest}`)
+                console.log(`上传完毕，文件${file}上传至服务器[${host}]${path}`)
             }
         })
     })
@@ -494,7 +491,6 @@ const egret = process.platform === 'win32' ? "egret.cmd" : "egret";
 
 export {
     git,
-    sshForLocal,
     parseGitUrl,
     checkGitDist,
     walkDirs,

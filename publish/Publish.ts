@@ -1,4 +1,4 @@
-import { egret, sshForLocal, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, webhookNotifer, scpForRemote, git, postDataUseJSON } from "./Helper";
+import { egret, svn, walkDirs, checkGitDist, copyFileSync, executeCmd, makeZip, webp, copy, sshForRemote, webhookNotifer, scpForRemote, git, postDataUseJSON } from "./Helper";
 import * as fs from "fs-extra";
 import * as path from "path";
 import { Buffer } from "buffer";
@@ -10,11 +10,9 @@ import * as uglify from "uglify-es";
 import * as crypto from "crypto";
 
 function doSSH(cmd: string, $: BuildOption, hideData?: boolean) {
-    let ip = $.opSSHIp;
-    if (ip && ip != "192.168.0.212") {
-        return sshForRemote(cmd, ip, undefined, undefined, hideData);
-    } else {
-        return sshForLocal(cmd, undefined, undefined, undefined, hideData);
+    let param = $.opSSHParam;
+    if (param) {
+        return sshForRemote(cmd, param, hideData);
     }
 }
 
@@ -134,14 +132,6 @@ cfgs Object 附加配置,要替换的配置内容
         scp: {
             func: this.scp,
             desc: `执行scp操作，scp({host:"192.168.0.1",path:"/data/upload/xxx",file:"//192.168.0.202/xx_version/xxx"})`
-        },
-        publishServer: {
-            func: this.publishServer,
-            desc: `将服务端脚本上传至服务器`
-        },
-        buildServer: {
-            func: this.buildServer,
-            desc: `将服务端发版并上传至服务器`
         },
         createBranch: {
             func: this.createBranch,
@@ -383,7 +373,7 @@ cfgs Object 附加配置,要替换的配置内容
 
 
     async buildApp($: BuildOption = {}) {
-        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, version, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath, scpApp, scpRes, opSSHIp, wsProxy, zmGateUrl, title } = this.initOpt($);
+        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, version, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath, scpApp, scpRes, opSSHParam, wsProxy, zmGateUrl, title } = this.initOpt($);
         let result = /^(http[s]?):\/\/(.*?)$/.exec(git_path);
         if (result) {
             git_path = `${result[1]}://${git_user}:${git_pwd}@${result[2]}`;
@@ -559,43 +549,9 @@ cfgs Object 附加配置,要替换的配置内容
                 cnt = cnt.replace(/@zmGateUrl@/g, zmGateUrl);
                 fs.writeFileSync(file, cnt, "utf8");
             });
-            if (pakApp) {
-                if ($.yunweiPath) {
-                    await this.pakApp(webFolder, $, { ignore: ["main.min.js", 'libs/**', 'h5core/**'] });
-                    if (scpApp && opSSHIp) {
-                        await this.scp({ path: path.join(scpApp, this.getZipName($, "web")), host: opSSHIp, file: $.zipPathApp });
-                    }
-                }
-                if ($.upload_app) {
-                    //执行运维脚本
-                    let data = await doSSH($.upload_app, $);
-                    console.log(data.output);
-                    if (data.code) {
-                        console.log("执行失败");
-                    }
-                }
-            }
-
 
             if ($.md5ResDir) {
                 await this.md5Res($, webFolder);
-            }
-
-            if ($.pakRes) {
-                if ($.yunweiPath) {
-                    await this.pakRes($);
-                    if (scpRes && opSSHIp) {
-                        await this.scp({ path: path.join(scpRes, this.getZipName($, "res")), host: opSSHIp, file: $.zipPathRes });
-                    }
-                }
-                if ($.upload_res) {
-                    //执行运维脚本
-                    let data = await doSSH($.upload_res, $);
-                    console.log(data.output);
-                    if (data.code) {
-                        console.log("执行失败");
-                    }
-                }
             }
         }
 
@@ -1089,78 +1045,7 @@ cfgs Object 附加配置,要替换的配置内容
     }
 
     async scp(params: ScpDefine) {
-        await scpForRemote(params.file, params.path, params.host);
-    }
-
-    async buildServer(opt: ServerBuildOption) {
-        // <!-- create deploy version -->
-        // <tstamp>
-        // 	<format property="deploy.time" pattern="yyyyMMdd_HHmmss" locale="en" />
-        // </tstamp>
-        // <!-- check out -->
-        // <sshexec host="${host}" username="${username}"  password="${password}" trust="true"
-        // 	command="source /etc/profile;cd /data/java-build-dir/zhh5_bt/out;svn checkout svn://192.168.0.202:8910/java/h5/zhh5/zhh5_server total_svn_co1 --username liujuan --password 123 --no-auth-cache" />
-
-        // <!-- deploy -->
-        // <sshexec host="${host}" username="${username}"  password="${password}" trust="true"
-        // 	command="source /etc/profile;cd /data/java-build-dir/zhh5_bt/out/total_svn_co1;/usr/local/apache-ant-1.9.4/bin/ant -f total-build-out-bt.xml -Ddeploy_time=${deploy.time} -Dncd=true -Dnsqld=false"/>
-        let deploy_time = new Date().format("yyyyMMdd_HHmmss");
-        const { buildCmds } = opt;
-        for (let i = 0; i < buildCmds.length; i++) {
-            let cmd = buildCmds[i];
-            cmd = cmd.replace("${deploy.time}", deploy_time)
-            await sshForLocal(cmd);
-        }
-        await this.publishServer(opt);
-    }
-
-    /**
-     * 更新服务器程序
-     * @param opt 
-     */
-    async publishServer(opt: ServerBuildOption) {
-        const { localPath, remotePath, host, cmd, key } = opt;
-        let localFile: string;
-        //检查目录
-        if (localPath && fs.existsSync(localPath)) {
-            let stat = fs.statSync(localPath);
-            if (stat.isFile()) {
-                localFile = localPath;
-            } else if (stat.isDirectory()) {
-                //查找最新的文件
-                let list = fs.readdirSync(localPath);
-                let len = list.length;
-                if (len) {
-                    //基于文件名，找到文件名最大的
-                    //server_20180925_150725.zip
-                    let max = "";
-                    let reg = new RegExp(`${key}_\\d{8}_\\d{6}\.zip`);
-                    for (let i = 0; i < len; i++) {
-                        let fileName = list[i];
-                        if (reg.test(fileName)) {
-                            let file = path.join(localPath, fileName);
-                            if (fs.statSync(file).isFile() && file > max) {
-                                max = file;
-                            }
-                        }
-                    }
-                    localFile = max;
-                }
-            }
-        }
-
-        if (localFile && fs.existsSync(localFile)) {
-            //尝试上传
-            await this.scp({ path: path.join(remotePath, path.basename(localFile)), host, file: localFile });
-            console.log("文件上传成功");
-            if (cmd) {
-                await sshForRemote(cmd, host);
-                console.log("更新脚本执行完毕");
-            }
-
-        } else {
-            console.log("找不到指定文件", localFile);
-        }
+        await scpForRemote(params);
     }
 
     async createBranch($: BuildOption) {

@@ -352,7 +352,7 @@ interface BuildOption {
     /**
      * 远程运维机器的ip
      */
-    opSSHIp?: string;
+    opSSHParam?: SSHDefine;
 
     /**
      * scp资源包的远程路径
@@ -437,14 +437,37 @@ interface BuildOption {
     buildEndAction?: string;
 }
 
-/**
- * SCP的相关配置
- */
-interface ScpDefine {
+interface SSHDefine {
     /**
      * 远程地址
      */
     host: string,
+    /**
+     * 端口号  
+     * 默认：22
+     */
+    port?: number;
+    /**
+     * 秘钥路径
+     */
+    keyPath?: string,
+
+    /**
+     * 密码
+     */
+    password?: string,
+
+    /**
+     * 用户名
+     */
+    username?: string,
+}
+
+/**
+ * SCP的相关配置
+ */
+interface ScpDefine extends SSHDefine {
+
     /**
      * 远程文件路径
      */
@@ -452,7 +475,8 @@ interface ScpDefine {
     /**
      * 本地文件路径
      */
-    file: string
+    file: string,
+
 }
 
 interface WebhookMsg {
