@@ -1086,20 +1086,22 @@ cfgs Object 附加配置,要替换的配置内容
 
         //处理客户端版本
         let branch = this.clientDevBranch;
+        const clientBranchName = `client_${version}`;
         if (branch) {
             checkGitDist(dir_tmp_source, git_path, branch);
             //基于master创建 `version` 版本的 tag，并提交
             // git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
-            git("push", dir_tmp_source, "origin", `${branch}:client_${version}`);
+            git("push", dir_tmp_source, "origin", `${branch}:${clientBranchName}`);
         }
 
         //处理服务器版本
         branch = this.serverDevBranch;
+        const serverBranchName = `server_${version}`
         if (branch) {
             checkGitDist(dir_tmp_source, git_path, branch);
             //基于master创建 `version` 版本的 tag，并提交
             // git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
-            git("push", dir_tmp_source, "origin", `${branch}:server_${version}`);
+            git("push", dir_tmp_source, "origin", `${branch}:${serverBranchName}`);
         }
 
         if (git_branchRCFile) {
@@ -1176,7 +1178,7 @@ cfgs Object 附加配置,要替换的配置内容
             console.log(e);
         }
 
-        let log = `分支[${version}]创建完成：\n配置分支路径：[${cfgSVNDist}]\nUI分支路径：[${uiSVNDist}]`;
+        let log = `分支[${version}]创建完成：\n配置分支路径：[${cfgSVNDist}]\nUI分支路径：[${uiSVNDist}]\n客户端分支名称：[${clientBranchName}]\n服务端分支名称：[${serverBranchName}]`;
         let dingding = $.webhook;
         if (dingding) {
             dingding.msg = log;
