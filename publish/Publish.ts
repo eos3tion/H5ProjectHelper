@@ -103,6 +103,16 @@ export class PublishBase {
      */
     git_branchRCFile: string;
 
+    /**
+     * 客户端主版本
+     */
+    clientDevBranch = "master";
+
+    /**
+     * 服务器主版本
+     */
+    serverDevBranch: string;
+
     funcs: { [index: string]: { func?(...args); desc: string } } = {
         buildApp: {
             func: this.buildApp,
@@ -161,6 +171,7 @@ cfgs Object 附加配置,要替换的配置内容
                         $ = await handle.func.apply(this, params);
                     } catch (e) {
                         console.error(e.message);
+                        console.log(e.stack);
                         return process.send("error");
                     }
                 }
@@ -373,7 +384,7 @@ cfgs Object 附加配置,要替换的配置内容
 
 
     async buildApp($: BuildOption = {}) {
-        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, version, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pakApp, pingtaihtmls, buildType, gameCfgPath, scpApp, scpRes, opSSHParam, wsProxy, zmGateUrl, title } = this.initOpt($);
+        let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, version, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pingtaihtmls, buildType, gameCfgPath, wsProxy, zmGateUrl, title } = this.initOpt($);
         let result = /^(http[s]?):\/\/(.*?)$/.exec(git_path);
         if (result) {
             git_path = `${result[1]}://${git_user}:${git_pwd}@${result[2]}`;
@@ -570,7 +581,7 @@ cfgs Object 附加配置,要替换的配置内容
             dingding.msg = log;
         }
         console.log(log);
-        this.onBuildEnd($);
+        await this.onBuildEnd($);
         console.log("处理完成");
         return $;
     }
@@ -1072,10 +1083,24 @@ cfgs Object 附加配置,要替换的配置内容
         if (result) {
             git_path = `${result[1]}://${git_user}:${git_pwd}@${result[2]}`;
         }
-        checkGitDist(dir_tmp_source, git_path, "master");
-        //基于master创建 `version` 版本的 tag，并提交
-        // git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
-        git("push", dir_tmp_source, "origin", `master:${version}`);
+
+        //处理客户端版本
+        let branch = this.clientDevBranch;
+        if (branch) {
+            checkGitDist(dir_tmp_source, git_path, branch);
+            //基于master创建 `version` 版本的 tag，并提交
+            // git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
+            git("push", dir_tmp_source, "origin", `${branch}:client_${version}`);
+        }
+
+        //处理服务器版本
+        branch = this.serverDevBranch;
+        if (branch) {
+            checkGitDist(dir_tmp_source, git_path, branch);
+            //基于master创建 `version` 版本的 tag，并提交
+            // git("push", dir_tmp_source, "origin", `master:refs/tags/${version}`);
+            git("push", dir_tmp_source, "origin", `${branch}:server_${version}`);
+        }
 
         if (git_branchRCFile) {
             try {
