@@ -395,7 +395,7 @@ function getMD5(data: string | Buffer) {
  */
 function sshForRemote(cmd: string, param: SSHDefine, hideData?: boolean) {
     const { host, port = 22, username = "root", keyPath, password } = param;
-    return ssh(cmd, { host, privateKey: require('fs').readFileSync(keyPath), username, port, password }, hideData);
+    return ssh(cmd, { host, privateKey: keyPath, username, port, password }, hideData);
 }
 
 /**
@@ -414,7 +414,7 @@ function scpForRemote(param: ScpDefine) {
             host,
             username,
             password,
-            privateKey: require('fs').readFileSync(keyPath)
+            privateKey: keyPath
         })
         console.log(`开始将文件${file}上传至服务器[${host}]${path}`)
         client.upload(file, path, err => {
@@ -506,5 +506,6 @@ export {
     egret,
     webhookNotifer,
     scpForRemote,
-    postDataUseJSON
+    postDataUseJSON,
+    scp2
 }
