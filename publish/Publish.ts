@@ -382,6 +382,10 @@ cfgs Object 附加配置,要替换的配置内容
         }
     }
 
+    getClientBranchName(version: string) {
+        return `client_${version}`;
+    }
+
 
     async buildApp($: BuildOption = {}) {
         let { egretVersion, git_path, git_user, git_pwd, dir_tmp, dir_tmp_source, git_branch, version, dir_tmp_publish, dir_tmp_nightly, useRaws, resVersionFile, buildFiles, cfgPath, dir_after_coverd, dir_before_coverd, other_srcFiles, mainversion, isRelease, pingtaihtmls, buildType, gameCfgPath, wsProxy, zmGateUrl, title } = this.initOpt($);
@@ -391,7 +395,7 @@ cfgs Object 附加配置,要替换的配置内容
         }
         if (isRelease) {
             if (version) {
-                git_branch = version;
+                git_branch = this.getClientBranchName(version);
             }
         }
 
@@ -1086,7 +1090,7 @@ cfgs Object 附加配置,要替换的配置内容
 
         //处理客户端版本
         let branch = this.clientDevBranch;
-        const clientBranchName = `client_${version}`;
+        const clientBranchName = this.getClientBranchName(version);
         if (branch) {
             checkGitDist(dir_tmp_source, git_path, branch);
             //基于master创建 `version` 版本的 tag，并提交
