@@ -6,7 +6,7 @@ import * as  archiver from "archiver";
 import * as wxgame from "./WXGame";
 import * as qhgame from "./QHGame";
 import { clearCode } from "./ClearCode";
-import * as uglify from "uglify-es";
+import * as uglify from "uglify-js";
 import * as crypto from "crypto";
 
 function doSSH(cmd: string, $: BuildOption, hideData?: boolean) {
@@ -292,7 +292,7 @@ cfgs Object 附加配置,要替换的配置内容
             //游戏配置文件的路径
             $.gameCfgPath ||= this.gameCfgOutput;
 
-            $.uglifyOptions ||= { compress: true };
+            $.uglifyOptions ||= { compress: true } as uglify.MinifyOptions;
 
             //调整代理
             $.wsProxy ||= "";
