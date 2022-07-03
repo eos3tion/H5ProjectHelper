@@ -61,7 +61,7 @@ async function uploadApp($: BuildOption, remoteParam: SSHDefine) {
         needUploadFiles.push(file);
     })
     for (const file of needUploadFiles) {
-        await client.upload(file, path.join(remotePath, path.relative(file, webFolder)));
+        await client.upload(file, path.join(remotePath, path.relative(webFolder, file)));
     }
 }
 
@@ -85,12 +85,12 @@ async function uploadRes($: BuildOption, remoteParam: SSHDefine) {
         const needUploadFiles = [];
         const dirs = fs.readdirSync(localDir);
         for (const dir of dirs) {
-            const files = fs.readdirSync(dir);
+            const files = fs.readdirSync(path.join(localDir, dir));
             //检查文件是否在字典中
             for (const file of files) {
                 const localPath = `./${dir}/${file}`;
                 if (!remotePathDict[localPath]) {
-                    needUploadFiles.push(file);
+                    needUploadFiles.push(path.join(dir, file));
                 }
             }
         }
