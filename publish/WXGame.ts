@@ -76,7 +76,7 @@ export function onBuildApp($: BuildOption) {
         files = files.concat(afterEmbedJs);
     }
 
-    let content = "";
+    let content = "window.supportWebp = false;";
     content += getCode(path.join(assets, "weapp-adapter.js")) + "\n";
     if (!$.useJsonLang) {
         content += getCode(path.join(dir_rawConfig, "lang.js")).replace("var $lang", "window.$lang") + "\n";
