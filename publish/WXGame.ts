@@ -2,7 +2,7 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import { copy, executeCmd, egret } from "./Helper";
 import { clearCode } from "./ClearCode";
-import * as uglify from "uglify-es";
+import * as uglify from "uglify-js";
 
 let outFolder: string;
 let dir_tmp_publish: string;
@@ -95,7 +95,7 @@ export function onBuildApp($: BuildOption) {
 
     content = content.replace(/@ver@/g, $.mainversion);
     //处理hash文件
-    let settings = wxappDebug ? { compress: false, output: { beautify: true } } : $.uglifyOptions;
+    let settings = wxappDebug ? { compress: false, output: { beautify: true } } as uglify.MinifyOptions : $.uglifyOptions;
     let out = uglify.minify(content, settings);
 
     const code = out.code;
