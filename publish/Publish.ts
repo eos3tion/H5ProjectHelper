@@ -544,11 +544,17 @@ cfgs Object 附加配置,要替换的配置内容
 
             let jsname = this.getJsName($);
             this.mergeJS(webFolder, jsname + ".js", $);
-            console.log(`尝试复制 lang.js 文件`);
+            console.log(`尝试复制 lang 文件`);
             //将lang.js复制到项目文件夹中
-            let useJsonLang = $.useJsonLang;
-            if (useJsonLang) {
-                copy(useJsonLang, path.join(webFolder, "resource", path.basename(useJsonLang)), $.showFileSolveLog);
+            let useJsonLangs = $.useJsonLang;
+            if (useJsonLangs) {
+                if (!Array.isArray(useJsonLangs)) {
+                    useJsonLangs = [useJsonLangs];
+                }
+                for (let i = 0; i < useJsonLangs.length; i++) {
+                    const useJsonLang = useJsonLangs[i];
+                    copy(useJsonLang, path.join(webFolder, "resource", path.basename(useJsonLang)), $.showFileSolveLog);
+                }
             } else {
                 copy(path.join($.dir_rawConfig, "lang.js"), path.join(webFolder, "lang.js"), $.showFileSolveLog);
             }
