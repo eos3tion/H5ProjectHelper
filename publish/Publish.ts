@@ -250,6 +250,8 @@ cfgs Object 附加配置,要替换的配置内容
 
             $.dir_resRaw ||= this.getResPath($, this.defaultLan);
 
+            $.dir_res_base ||= this.getResPath($, "");
+
             $.dir_res ||= this.getResPath($, $.lan);
 
             $.git_path ||= this.gitPath;

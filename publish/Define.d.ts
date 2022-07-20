@@ -115,7 +115,11 @@ interface BuildOption {
      * 格式： `yyyyMMdd_HHmmss`
      */
     buildTime?: string;
-
+    /**
+     * 资源根目录，不区分语言
+     * 默认 ```this.webDir + "/" + $.project + "/res/"```
+     */
+    dir_res_base?: string;
     /**
      * 项目资源svn对应的物理目录
      * 默认 ```this.webDir + "/" + $.project + "/res/" + $.lan + "/"```
