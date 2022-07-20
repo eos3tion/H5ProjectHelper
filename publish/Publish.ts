@@ -84,7 +84,7 @@ export class PublishBase {
      * pvp/2.png        9d/501faf821de98c31390a32eab2d1a5.png
      * ```
      */
-    resVerFileName = "resVer.txt";
+    resVerFileName = "resVer{v}.txt";
 
     /**
      * 发布时要拷贝的文件或文件夹
@@ -1215,22 +1215,25 @@ cfgs Object 附加配置,要替换的配置内容
         //1. 找到资源目录，将资源目录或者resVersionConfig.json 生成一个 原路径 和 md5后路径的数组
         //2. 尝试生成md5名字的文件到指定目录
         //3. 将生成的版本文件复制为--> resource/ver.txt
-        const { checkFileResource, copyResToFile, checkBaseFileResource } = await import("./ResMd5Solver");
+        const { checkFileResource, copyResToFile } = await import("./ResMd5Solver");
         const outPath = path.join($.dir_tmp, `res_${$.mainversion}.txt`);
         console.log(`开始检查资源文件[${$.dir_res}]中所有文件的hash值`)
-        let files = await checkBaseFileResource($.dir_res_base);
-        if (files && files.length) {
-            for (let i = 0; i < files.length; i++) {
-                let file = files[i];
-                let arr = await checkFileResource(file, outPath);
+        const { dir_res_base } = $;
+        const { defaultLan, resVerFileName } = this;
+        const dirs = fs.readdirSync(dir_res_base);
+        for (let i = 0; i < dirs.length; i++) {
+            const dir = dirs[i];
+            if (dir != ".svn") {
+                const inputDir = path.join(dir_res_base, dir);
+                let arr = await checkFileResource(inputDir, outPath);
                 copyResToFile(arr, $.md5ResDir);
-                let fileName = file.replace($.dir_res_base, "");
-                let resVerFileName = fileName == "cn" ? this.resVerFileName : "resVer_" + fileName + ".txt";
-                copyFileSync(outPath, path.join(webFolder, "resource", resVerFileName));
+                let v = "";
+                if (dir !== defaultLan) {
+                    v = "_" + dir;
+                }
+                copyFileSync(outPath, path.join(webFolder, "resource", resVerFileName.replace("{v}", v)));
             }
         }
-
-
         // let arr = await checkFileResource($.dir_res, outPath);
         // copyResToFile(arr, $.md5ResDir);
         // copyFileSync(outPath, path.join(webFolder, "resource", this.resVerFileName));
