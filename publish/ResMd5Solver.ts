@@ -38,6 +38,14 @@ export function solveResourceWithDict(inputDir: string, dict: { [url: string]: R
         return resArr;
     }
 }
+export async function checkBaseFileResource(baseDir: string) {
+    var lanResPaths: string[] = [];
+    walkDirs(baseDir, file => {
+        lanResPaths.push(file);
+    }, file => fs.statSync(file).isDirectory() && paths.basename(file) !== ".svn");
+    return lanResPaths;
+}
+
 export async function checkFileResource(inputDir: string, versionFile: string, resArr?: ResMd5Data[]) {
     if (!resArr) {
         resArr = [];
