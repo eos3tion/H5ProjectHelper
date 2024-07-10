@@ -432,7 +432,7 @@ function scpForRemote(param: ScpDefine) {
  * 发送webhook消息
  */
 function webhookNotifer(opt: { msg: string, url: string }) {
-    if (!opt.msg) {
+    if (!opt || !opt.msg) {
         return;
     }
     postDataUseJSON(opt.url, {
